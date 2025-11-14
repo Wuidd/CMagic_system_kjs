@@ -1,0 +1,10 @@
+#Whether to cancel the normal left click event when switching wand mode
+wandLeftClickCancel = true
+#Holding the wand will highlight all the clues in this range
+# Default: 64
+# Range: 1 ~ 256
+wandHighlightRadius = 64
+#Holding the finder and aiming the crosshair at clue block in this distance will get a feedback
+# Default: 20.0
+# Range: 1.0 ~ 128.0
+finderHitDistance = 20.0

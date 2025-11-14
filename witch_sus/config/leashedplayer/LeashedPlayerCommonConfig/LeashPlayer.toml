@@ -1,0 +1,47 @@
+#Leash Player Config
+#Leash Player Command
+[Command]
+	#The prefix of this mod's commands
+	# [ Default: true] 
+	EnableLeashPlayerCommand = true
+	#The prefix of this mod's commands
+	# [ Default:'lp'] 
+	LeashedPlayerModCommandPrefix = "lp"
+
+#Leash Player Arrow
+[LeashRopeArrow]
+	#How many times is the length of the arrow rope based on BreakLength TimeBase
+	#[ Default : 5.0f, Invalid Range:[2.0f, 10.0f] ]
+	# Default: 5.0
+	# Range: 2.0 ~ 10.0
+	TheMultipleArrowBreak = 5.0
+	#If the LeashArrowEntity's life is bigger than this value ,it will be discarded
+	#[ Default : 2400, Invalid Range:[1200 , 10240]]
+	# Default: 2400
+	# Range: 1200 ~ 10240
+	TheLeashArrowMaxLifeTime = 2400
+	#If the NestleArrowEntity's life is bigger than this value ,it will be discarded", "[ Default : 2400, Invalid Range:[1200 , 10240]]
+	# Default: 2400
+	# Range: 1200 ~ 10240
+	TheNestleArrowMaxLifeTime = 2400
+
+#Leash Player Misc
+[Misc]
+
+	#Leash Player Length
+	[Misc.LeashLength]
+		#When it exceeds how many times, the leash will drop
+		# [ Default:2.0f, Invalid Range:[2.0f, 5.0f] ]
+		# Default: 3.0
+		# Range: 3.0 ~ 6.0
+		BreakLengthTimeBase = 3.0
+		#The minimum integer's length of Leash
+		# [ Default:5, Invalid Range:[2,10] ]
+		# Default: 5
+		# Range: 2 ~ 10
+		MinLeashLength = 5
+		#The maximum integer's length of Leash
+		# [ Default:1024, Invalid Range:[32, 1024] ]
+		# Default: 1024
+		# Range: 32 ~ 1024
+		MaxLeashLength = 1024

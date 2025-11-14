@@ -1,0 +1,20 @@
+#Amount of damage scale boost per level of Crossfire buff gives
+# Default: 0.3
+# Range: 2.2250738585072014E-308 ~ 1.7976931348623157E308
+crossfire_buff_power = 0.3
+#Enable calling hurt function with invokespecial on entities with a specific tag
+enable_special_hurt = true
+#If true, gun damage will be affect by `minecraft:generic.attack_damage` attribute, then use the result as base value for `gunsmithlib:bullet_damage` attribute
+use_attack_damage = true
+#If true, guns' armor piercing mechanic will have only one hit with target armor reduced, instead of dealing two hits.
+#This can fix the bug that Apotheosis's magic armor can reduce armor-piercing damage,
+#and make Cataclysm's dynamic damage reduction work properly for guns.
+#
+#Added in version 4.4.2
+alt_ap_formula = true
+#Auto inference whether a block or entity is interactable by its method overriding status.
+#This is one of the core technologies in my mod TacInteractKey (https://www.curseforge.com/minecraft/mc-mods/tac-interact-key),
+#which is missing in the interact key functionality of TaCZ itself.
+#
+#Added in version 4.4.3
+interact_key_inferencing = true

@@ -35,7 +35,7 @@ ServerEvents.tick(event =>{
 PlayerEvents.chat(event =>{
     let player = event.player
     let username = event.username
-    let message = event.message
+    let message = String(event.message)
     if (!messagePrefix(message)){event.cancel()}
     let server = event.server
     let allPlayers = server.playerList.players
@@ -64,6 +64,7 @@ PlayerEvents.chat(event =>{
             let ananOrder = false
             let ananOrderRadius = -1
             let ananOrderReceived = []
+            let ananMessageReceived = []
             if (majo.name == "夏目安安"){
                 let order = messagePrefix(message)
                 order = String(order)
@@ -94,6 +95,21 @@ PlayerEvents.chat(event =>{
             for (let receiver of allPlayers){
                 if (isMajoPlayer(receiver)){
                     let distance = receiver.distanceToEntity(player)
+                    if (distance < ananOrderRadius && ananOrder){
+                        if (messagePrefix(message).includes(isMajoPlayer(receiver).name)){
+                            ananOrderReceived.push(isMajoPlayer(receiver))
+                            message = message.replace(isMajoPlayer(receiver).name,'')
+                            let order = messagePrefix(message)
+                            order = String(order)
+                            order = order.replace("\[","【")
+                            order = order.replace("\]","】")
+                            if (order === "【】"){
+                                event.cancel()
+                            }
+                        }
+                        ananMessageReceived.push(isMajoPlayer(receiver))
+                        continue
+                    } 
                     let speaker = majo.color+"◆"+majo.name
                     if (majo.name == '宝生玛格'){
                         let imitated = majo.learnedSound[majo.selectedSound]
@@ -118,20 +134,6 @@ PlayerEvents.chat(event =>{
                     if (distance > radiusSet[1] && distance <= radiusSet[2]){
                         speaker = "◆未知"
                     }
-                    if (distance <= radiusSet[0] && (distance > 0.1 || messagePrefix(message).includes(isMajoPlayer(receiver).name)) && ananOrder){
-                        if (messagePrefix(message).includes(isMajoPlayer(receiver).name)){
-                            ananOrderReceived.push(isMajoPlayer(receiver))
-                            message = replaceFirstOccurrence(message,isMajoPlayer(receiver).name,'')
-                            let order = messagePrefix(message)
-                            order = String(order)
-                            order = order.replace("\[","【")
-                            order = order.replace("\]","】")
-                            if (order === "【】"){
-                                event.cancel()
-                            }
-                        }
-                        continue
-                    } 
                     receiver.tell(speaker)
                     receiver.tell("  "+messageSponge(messagePrefix(message),Math.max(0,(distance-radiusSet[0])/(radiusSet[1]-radiusSet[0]))))
                 }
@@ -156,7 +158,7 @@ PlayerEvents.chat(event =>{
                 if (!ananOrderReceived.length){
                     for (let receiver of global.majoList){
                         if (receiver.player){
-                            if (receiver.player.distanceToEntity(player) <= ananOrderRadius && receiver.player.name.string != "夏目安安"){
+                            if (receiver.player.distanceToEntity(player) <= ananOrderRadius && receiver.name != "夏目安安"){
                                 ananOrderReceived.push(receiver)
                             }
                         }
@@ -167,11 +169,13 @@ PlayerEvents.chat(event =>{
                 order = String(order)
                 order = order.slice(0,0)+"【"+order.slice(1)
                 order = order.slice(0,order.length-1)+'】'
+                for (let orderReceiver of ananMessageReceived){
+                    orderReceiver.player.tell(majo.color+"◆"+majo.name)
+                    orderReceiver.player.tell("  "+order)
+                }
                 for (let orderReceiver of ananOrderReceived){
                     if (orderReceiver.player){
                         let receiverName = orderReceiver.player.name.string
-                        orderReceiver.player.tell(majo.color+"◆"+majo.name)
-                        orderReceiver.player.tell("  "+order)
                         orderReceiver.player.potionEffects.add("minecraft:nausea",140,0,false,false)
                         server.runCommandSilent("/shader apply "+receiverName+" exposure:shaders/post/light_blue_tint.json")
                         orderReceiver.shadering = true
@@ -425,12 +429,4 @@ function messageSponge(message,percent){
     return selectedIndices.reduce((acc,index) =>{
         return acc.slice(0,index)+spongeWord+acc.slice(index+1)
     },message)
-}
-
-//发挥正常replace功能
-
-function replaceFirstOccurrence(str, searchStr, replacement) {
-    let index = str.indexOf(searchStr);
-    if (index == -1) return str;
-    return str.substring(0, index)+replacement+str.substring(index + searchStr.length);
 }

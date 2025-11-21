@@ -2,7 +2,8 @@
 //饱食度系统
 
 let basicHungerSpeed = -40 //每刻减少的饱食度值
-let foodDiscount = 0.5
+let foodDiscount = 0.5 //食物饱食度修正
+let sleepHungerDiscount = 0.5 //不在清醒时的饱食度消耗
 
 //主进程
 
@@ -21,7 +22,9 @@ PlayerEvents.tick(event =>{
     }
     player.setFoodLevel(Math.round(20*hungerScore.get()/majo.maxFood))
     player.setSaturation(0)
-    if(Math.round(20*hungerScore.get()/majo.maxFood) > 0 && !isFocusMode){hungerScore.add(basicHungerSpeed*majo.extraFoodNeed*majo.extraFoodNeedFromSporting)}
+    let hungerMulti = majo.extraFoodNeed*majo.extraFoodNeedFromSporting
+    if (majo.faint || player.sleeping){hungerMulti = hungerMulti*sleepHungerDiscount}
+    if (Math.round(20*hungerScore.get()/majo.maxFood) > 0 && !isFocusMode){hungerScore.add(basicHungerSpeed*hungerMulti)}
 })
 
 //食品

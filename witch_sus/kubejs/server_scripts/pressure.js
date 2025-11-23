@@ -26,9 +26,13 @@ PlayerEvents.tick(event =>{
         pressureScore.set(0)
     }
     if (majo.faint){
-        if (!majo.beCarried){
-            player.startSleeping(player.position())
+        let pos = majo.pos
+        if (!majo.carrior){
+            server.runCommandSilent("/tp "+player.name.string+" "+pos[0]+" "+pos[1]+" "+pos[2])
             server.runCommandSilent("/ysm play "+player.name.string+" climbing")
+        }
+        else {
+            majo.pos = vecToArr(player.position())
         }
         player.setSelectedSlot(majo.selectedSlot)
         server.runCommandSilent("/effect give "+player.name.string+" minecraft:blindness 2 0 true")
@@ -56,6 +60,7 @@ PlayerEvents.tick(event =>{
         server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,majoProgress).add(faintMajolize*majo.majolizeMulti*majo.extraMajolizeMulti)
         majo.fatigueMultiFromPressure = 10000
         majo.selectedSlot = player.selectedSlot
+        majo.pos = vecToArr(player.position())
     }
 })
 
@@ -70,9 +75,13 @@ PlayerEvents.tick(event =>{
     let majo = isMajoPlayer(player)
     let pressureScore = server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,pressure)
     if (majo.faint){
-        if (!majo.beCarried){
-            player.startSleeping(player.position())
+        let pos = majo.pos
+        if (!majo.carrior){
+            server.runCommandSilent("/tp "+player.name.string+" "+pos[0]+" "+pos[1]+" "+pos[2])
             server.runCommandSilent("/ysm play "+player.name.string+" climbing")
+        }
+        else {
+            majo.pos = vecToArr(player.position())
         }
         player.setSelectedSlot(majo.selectedSlot)
         server.runCommandSilent("/effect give "+player.name.string+" minecraft:blindness 2 0 true")
@@ -85,6 +94,7 @@ PlayerEvents.tick(event =>{
         server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,majoProgress).add(faintMajolize*majo.majolizeMulti*majo.extraMajolizeMulti)
         majo.fatigueMultiFromPressure = 10000
         majo.selectedSlot = player.selectedSlot
+        majo.pos = vecToArr(player.position())
     }
 })
 

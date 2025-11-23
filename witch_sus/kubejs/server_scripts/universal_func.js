@@ -59,30 +59,16 @@ function findScoreHolder(server,name){
 function isOperator(player){
     try{
         if (typeof player == "string"){
-            for (let op of Object.keys(operatorList)){
-                if (!op.isEmpty){
-                    if (player == op){return true}
-                }
+            for (let op of global.operatorList){
+                if (player == op.username){return op}
             }
-            return false
+            return null
         }
     }
     finally {
-        for (let op of Object.keys(operatorList)){
-            if (!op.isEmpty){
-                if (player.name.string == op){return true}
-            }
+        for (let op of global.operatorList){
+            if (player.name.string == op.username){return op}
         }
-        return false
-    }
-}
-
-//对场务通知
-
-function informOperator(server,text){
-    for (let player of server.playerList.players){
-        if (isOperator(player)){
-            player.tell(text)
-        }
+        return null
     }
 }

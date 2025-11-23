@@ -32,11 +32,11 @@ function Majo(name,height,color,token,physique,mentality){
     this.debris = 13000+40*mentality
     this.majolizeScore = 0
     this.extraMajolizeMulti = 1
-    this.noMajoProgress = false
 
     this.scoreHolder = null
     this.selectedSlot = null
-    this.beCarried = false
+    this.pos = null
+    this.carrior = null
     this.shadering = false
 }
 
@@ -63,8 +63,8 @@ hosho_mago.selectedSound = 0
 
 tono_hanna.flying = false
 
-hikami_meruru.noMajoProgress = true
-tachibana_sheri.noMajoProgress = true
+hikami_meruru.majolizeMulti = 0
+tachibana_sheri.majolizeMulti = 0
 
 //登记的将生效的角色卡
 

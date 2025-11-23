@@ -1,6 +1,8 @@
 // priority: 2
 //玩家行为
 
+const $EntityPickupEvent = Java.loadClass("tschipp.carryon.events.EntityPickupEvent")
+
 let spongeWord = ".." //混淆替换词
 let noSpongeChar = [",","，",".","。","？","?","!","！"] //不予混淆的字符
 let shoutRadius = [35,40,45] //大声发的收听范围
@@ -49,7 +51,7 @@ PlayerEvents.chat(event =>{
         }
         if (isOperator(player)){
             for (let receiver of allPlayers){
-                receiver.tell("<"+username+"§e◆场务§f "+operatorList[username]+"> "+message)
+                receiver.tell("<"+username+"§e◆场务§f "+isOperator(player).name+"> "+message)
             }
             event.cancel()
         }
@@ -217,7 +219,7 @@ PlayerEvents.chat(event =>{
             }
             for (let receiver of allPlayers){
                 if (isMajoPlayer(receiver)){
-                    let speaker = "◆"+operatorList[username]
+                    let speaker = "◆"+isOperator(player).name
                     let radiusSet = []
                     switch (message.charCodeAt(0)){
                         case "%":
@@ -248,7 +250,7 @@ PlayerEvents.chat(event =>{
                         let distance = receiver.distanceToEntity(player)
                         if (distance > localRadius){continue}
                     }
-                    receiver.tell("◆"+operatorList[username])
+                    receiver.tell("◆"+isOperator(player).name)
                     receiver.tell("  "+messagePrefix(message))
                 }
             }
@@ -346,21 +348,22 @@ BlockEvents.broken(event =>{
 
 //被抱起时的标签
 
-PlayerEvents.tick(event =>{
-    let player = event.player
-    if (player.isSpectator()){return 0}
-    if (isMajoPlayer(player)){
-        if (isMajoPlayer(player).beCarried){
-            isMajoPlayer(player).beCarried = false
+NativeEvents.onEvent($EntityPickupEvent,event =>{
+    if (event.target.isPlayer()){
+        if (isMajoPlayer(event.target)){
+            isMajoPlayer(event.target).carrior = event.player
         }
     }
-    let carry = player.carryOnData
-    if (!carry.carrying){return 0}
-    if (!carry.entity){return 0}
-    if (!carry.entity.isPlayer()){return 0}
-    let majo = isMajoPlayer(carry.entity)
-    if (majo){
-        majo.beCarried = true
+})
+
+PlayerEvents.tick(event =>{
+    let player = event.player
+    if (!isMajoPlayer(player)){return 0}
+    let majo = isMajoPlayer(player)
+    if (majo.carrior){
+        if (!majo.carrior.carryOnData.isCarrying("player")){
+            majo.carrior = null
+        }
     }
 })
 

@@ -12,8 +12,6 @@ let jump = null //跳跃计分板
 let hunger = null //饱食度计分板
 let neededScoreBoard = ["Majo_Progress","Fatigue","Pressure","Jump","Hunger"] //必要的计分板目录
 
-let operatorList = {"placeHolder":"placeHolder","0yiyu0":"看守","name_means_game":"典狱长","NoStay":"月代雪","v_t_4":"典狱长"} //场务名单
-
 let timeSynsTrigger = true //激活按天结算
 let majolizeTimeTrigger = false //按天结算魔女化进度
 let basicMajolizeSpeed = 100 //基础魔女化值
@@ -37,16 +35,16 @@ PlayerEvents.loggedIn(event =>{
             for (const majo of global.majoList){
                 if (!majo.player && item.is(majo.token)){
                     setUpMajo(server,majo,player)
-                    console.log(name+" obtain the identity "+majo.name)
                     return true
                 }
             }
         }    
     }
     if (isOperator(player)){
-        server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+name+'§e◆场务§f'+operatorList[name]+'"}')
+        isOperator(player).player = player
+        server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+name+'§e◆场务§f'+isOperator(player).name+'"}')
         if (isMajoProgressing){
-            server.runCommandSilent('/hiddennames setName '+name+' name {"text":"◆'+operatorList[name]+'"}')
+            server.runCommandSilent('/hiddennames setName '+name+' name {"text":"◆'+isOperator(player).name+'"}')
             server.runCommandSilent("/gamemode spectator "+name)
             player.tell("§2演出已经正式开始了。您已被转为观察者模式。")
             return true
@@ -68,7 +66,6 @@ PlayerEvents.loggedOut(event =>{
     server.runCommandSilent('/hiddennames setName '+name+' reset')
     if (isMajoPlayer(player)){
         desetUpMajo(event.server,isMajoPlayer(player))
-        console.log(name+" lost the identity")
     }
 })
 
@@ -115,7 +112,8 @@ EntityEvents.death("player",event =>{
             weaponName = event.source.weaponItem.hoverName.string
         }
     }
-    for (let op of Object.keys(operatorList)){
+    for (let operator of global.operatorList){
+        let op = operator.username
         event.server.runCommandSilent('/tellraw '+op
             +' {"text":"['+majo.color+majo.name+'§e]，扮演者['+player.name.string
             +']死亡了！","color":"yellow"}')
@@ -188,7 +186,7 @@ ItemEvents.rightClicked("yuushya:button_sign_play",event =>{
                     continue
                 }
                 if (isOperator(player)){
-                    server.runCommandSilent('/hiddennames setName '+name+' name {"text":"◆'+operatorList[name]+'"}')
+                    server.runCommandSilent('/hiddennames setName '+name+' name {"text":"◆'+isOperator(player).name+'"}')
                     player.tell("§2请开始您的场务工作。")
                     continue
                 }
@@ -207,7 +205,7 @@ ItemEvents.rightClicked("yuushya:button_sign_play",event =>{
                     continue
                 }
                 if (isOperator(player)){
-                    server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+name+'§e◆场务§f'+operatorList[name]+'"}')
+                    server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+name+'§e◆场务§f'+isOperator(player).name+'"}')
                     continue
                 }
             }
@@ -304,9 +302,6 @@ function majoPlayerPrefix(server,majo){
     server.runCommandSilent("/gamemode survival "+name)
     server.runCommandSilent("/tag "+name+" add majo")
     player.setMaxHealth(majo.maxHealth)
-    if (majo.noMajoProgress){
-        majo.majolizeMulti = 0
-    }
     if (majo.name == "冰上梅露露"){
         server.runCommandSilent("/effect give "+name+" minecraft:resistance infinite 4 true")
         server.runCommandSilent("/effect give "+name+" minecraft:regeneration infinite 9 true")
@@ -376,7 +371,8 @@ function majolizeInform(server){
             if (newScore > debris){
                 server.runCommandSilent("/damage "+name+" 9999 magic")
                 server.runCommandSilent("/execute as "+name+" at @s run playsound minecraft:entity.wither.death voice @s ~ ~ ~ 1 1")
-                for (let op of Object.keys(operatorList)){
+                for (let operator of global.operatorList){
+                    let op = operator.username
                     server.runCommandSilent('/tellraw '+op
                         +' {"text":"['+majo.color+majo.name+'§e]已残骸化","color":"yellow"}')
                 }

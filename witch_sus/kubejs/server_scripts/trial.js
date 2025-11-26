@@ -66,6 +66,7 @@ ItemEvents.rightClicked('yuushya:button_sign_notice',event =>{
                 if (majo.player){
                     candidates ++
                     beginningSpeecher.push(majo)
+                    majo.player.stages.add("joinTrial")
                 }
             }
             resetVote()
@@ -323,7 +324,7 @@ ItemEvents.rightClicked("yuushya:button_sign_bookmark",event =>{
     let server = event.server
     if (item.customData.getBoolean("PlayerTrialTool")){
         let majo = isMajoPlayer(player)
-        let target = player.rayTrace().entity
+        let target = player.rayTrace(50).entity
         let isMainSpeecher = false
         if (currentSpeecher.length){
             for (let speecher of currentSpeecher){
@@ -337,7 +338,15 @@ ItemEvents.rightClicked("yuushya:button_sign_bookmark",event =>{
             if (target){
                 if (target.isPlayer()){
                     if (isMajoPlayer(target)){
-                        let invited = isMajoPlayer(player)
+                        let invited = isMajoPlayer(target)
+                        for (let speecher of currentSpeecher){
+                            if (speecher.name == invited.name){
+                                player.tell({"text":"该角色已经在发言时段中。","color":"yellow"})
+                                server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bass voice @s")
+                                player.addItemCooldown("yuushya:button_sign_bookmark",20)
+                                return 0
+                            }
+                        }
                         beepNoticer(server,{"text":majo.color+"◆"+majo.name+"§e邀请了"+invited.color+"◆"+invited.name+"§e进行发言。"},true)
                         currentSpeecher.push(invited)
                         currentSpeechTime = 0
@@ -384,7 +393,7 @@ ItemEvents.rightClicked("yuushya:button_sign_bookmark",event =>{
             else {
                 player.tell({"text":"已准备进行发言。","color":"green"})
                 server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bell voice @s")
-                player.addItemCooldown("yuushya:button_sign_bookmark",2*setSpeechTime)
+                player.addItemCooldown("yuushya:button_sign_bookmark",20)
                 waitingSpeecher.push(majo)
             }
         }
@@ -398,13 +407,12 @@ ServerEvents.tick(event =>{
     currentParticipants = 0
     for (let majo of global.majoList){
         if (majo.player){
-            currentParticipants ++
+            if (majo.player.stages.has("inTrial")){
+                currentParticipants ++
+            }
         }
     }
     if (currentParticipants >= candidates){
-        if (currentParticipants > candidates){
-            candidates = currentParticipants
-        }
         if (!participantsSyns){
             for (let player of server.playerList.players){
                 player.tell({"text":"缺席者已到场，审判继续。","color":"green"})
@@ -434,8 +442,9 @@ PlayerEvents.tick(event =>{
     let player = event.player
     let server = event.server
     if (!isMajoPlayer(player)){return 0}
-    if (isJudging && !player.stages.has("inTrial")){
+    if (isJudging && player.stages.has("joinTrial")){
         player.stages.add("inTrial")
+        player.stages.remove("joinTrial")
         server.runCommandSilent("/inventory_slots set_available "+player.name.string+" 14")
         let inv = player.inventory
         for (let i = 0;i < 5;i++){
@@ -483,9 +492,8 @@ PlayerEvents.tick(event =>{
                     item.setCustomData({"PlayerTrialTool":true})
                     item.setCustomName({"text":"准备与邀请","color":"green","italic":false})
                     item.setLore([{"text":"若下一发言时段暂无发言人，使自己成为下一时段的发言人","color":"white","italic":false},
-                        {"text":"在上述情况下，冷却时间为两个发言时段","color":"white","italic":false},
                         {"text":"若自己是当前时段的发言人，使准星对准的角色加入发言时段，并重置发言时间","color":"white","italic":false},
-                        {"text":"在上述情况下，冷却时间为一个发言时段，且所有参与者共享","color":"white","italic":false}
+                        {"text":"若如此做，冷却时间为一个发言时段，且所有参与者共享","color":"white","italic":false}
                     ])
                     break
             }
@@ -530,6 +538,9 @@ let roundTimeSec = 0
 let speakTimeMin = 0
 let speakTimeSec = 0
 let voteSitu = null
+let showTime = 0 //切换提示的计时器
+let switchShowTime = 100
+let showContent = "ROUND"
 
 ServerEvents.tick(event =>{
     if (!isJudging){return 0}
@@ -548,6 +559,12 @@ ServerEvents.tick(event =>{
     else {
         voteSitu = approve+'§a👍§f/'+disapprove+'§4👎§f'
     }
+    showTime ++
+    if (showTime >= switchShowTime){
+        if (showContent == "ROUND"){showContent = "SPEECHER"}
+        else if (showContent == "SPEECHER"){showContent = "ROUND"}
+        showTime = 0
+    }
 })
 
 //审判详情提示
@@ -565,9 +582,13 @@ PlayerEvents.tick(event =>{
         server.runCommandSilent('/title '+player.name.string+' actionbar {"text":"等待离席人员..."}')
         return 0
     }
-    server.runCommandSilent('/title '+player.name.string+' actionbar {"text":"「轮次」'+currentTrialRound+'/'+setMaxTrialRounds+
-        ' '+roundTimeMin+':'+roundTimeSec+'「观点」'+voteSitu+'「当前」'+speaker+' '+speakTimeMin+':'+speakTimeSec+'「后续」'+nextSpeaker+
-        '"}')
+    if (showContent == "ROUND"){
+        server.runCommandSilent('/title '+player.name.string+' actionbar {"text":"「轮次」'+currentTrialRound+'/'+setMaxTrialRounds+
+        ' '+roundTimeMin+':'+roundTimeSec+'「观点」'+voteSitu+'"}')
+    }
+    else if (showContent == "SPEECHER"){
+        server.runCommandSilent('/title '+player.name.string+' actionbar {"text":"「当前」'+speaker+' '+speakTimeMin+':'+speakTimeSec+'「后续」'+nextSpeaker+'"}')
+    }
 })
 
 //主进程

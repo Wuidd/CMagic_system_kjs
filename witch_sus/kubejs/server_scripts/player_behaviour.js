@@ -380,7 +380,9 @@ let corpseInventoryTemp = {}
 NativeEvents.onEvent($EntityPickupEvent,event =>{
     if (event.target.type == "corpse:corpse"){
         let nbt = event.target.nbt
-        corpseInventoryTemp[nbt["Death"]["PlayerName"]] = nbt["Death"]["MainInventory"]
+        corpseInventoryTemp[nbt["Death"]["PlayerName"]] = [nbt["Death"]["MainInventory"],nbt["Death"]["OffHandInventory"],nbt["Death"]["ArmorInventory"]]
+        nbt["Death"]["OffHandInventory"] = []
+        nbt["Death"]["ArmorInventory"] = []
         nbt["Death"]["MainInventory"] = []
         event.target.setNbt(nbt)
     }
@@ -390,7 +392,9 @@ EntityEvents.spawned("corpse:corpse",event =>{
     if (!Object.keys(corpseInventoryTemp).length){return 0}
     let nbt = event.entity.nbt
     if (corpseInventoryTemp[nbt["Death"]["PlayerName"]]){
-        nbt["Death"]["MainInventory"] = corpseInventoryTemp[nbt["Death"]["PlayerName"]]
+        nbt["Death"]["MainInventory"] = corpseInventoryTemp[nbt["Death"]["PlayerName"]][0]
+        nbt["Death"]["OffHandInventory"] = corpseInventoryTemp[nbt["Death"]["PlayerName"]][1]
+        nbt["Death"]["ArmorInventory"] = corpseInventoryTemp[nbt["Death"]["PlayerName"]][2]
         event.entity.setNbt(nbt)
         delete corpseInventoryTemp[nbt["Death"]["PlayerName"]]
     }

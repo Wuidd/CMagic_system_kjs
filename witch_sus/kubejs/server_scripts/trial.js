@@ -33,6 +33,11 @@ let soloTimes = 0 //连续单人发言次数
 let approve = 0 //赞成票
 let disapprove = 0 //反对票
 
+let musicTime = 100 //歌曲计时器
+let normalMusic = {"mocai_music:trial_asking":6420,"mocai_music:trial_chossing":6460,"mocai_music:trial_thinking":2080} //普通轮歌曲
+let crucialMusic = {"mocai_music:trial_asking_final":8220,"mocai_music:trial_defensing":4760,"mocai_music:trial_defensing_determination":4740} //关键轮歌曲
+let breakInMusic = {"mocai_music:character_ema_breaking":5300,"mocai_music:character_hiro_breaking":6340,"mocai_music:trial_asking_final":8220} //打断歌曲
+
 //启用审判
 ItemEvents.rightClicked('yuushya:button_sign_notice',event =>{
     let item = event.item
@@ -73,6 +78,7 @@ ItemEvents.rightClicked('yuushya:button_sign_notice',event =>{
             server.runCommandSilent('/title @a title {"text":"⚖审判开始⚖","color":"red","bold":true}')
             server.runCommandSilent("/stopsound @a weather")
             server.runCommandSilent("/execute as @a at @s run playsound mocai_music:trial_beginning weather @s")
+            musicTime = 4800
             server.scheduleInTicks(60,event =>{
             for (let player of server.playerList.players){
                 if (isMajoPlayer(player)){
@@ -298,9 +304,16 @@ ItemEvents.rightClicked("yuushya:button_sign_notice",event =>{
             }
             let breaker = isMajoPlayer(player)
             beepNoticer(server,{"text":breaker.color+"◆"+breaker.name+"§e打断了发言！"},false)
+            server.runCommandSilent("/stopsound @a weather")
+            musicTime += 100
             server.runCommandSilent("/execute as @a at @s run playsound sound_effect:crack_01 voice @s")
             server.scheduleInTicks(10,event =>{
                 server.runCommandSilent("/execute as @a at @s run playsound sound_effect:crack_02 voice @s")
+            })
+            server.scheduleInTicks(60,event =>{
+                let breakInMus = Object.keys(breakInMusic)[Math.floor(Math.random()*Object.keys(breakInMusic).length)]
+                musicTime = breakInMusic[breakInMus]
+                server.runCommandSilent("/execute as @a at @s run playsound "+breakInMus+" weather @s ~ ~ ~ 0.5 1")
             })
             currentSpeecher.push(breaker)
             currentSpeechTime = 0
@@ -481,9 +494,7 @@ PlayerEvents.tick(event =>{
                     item.setCustomData({"PlayerTrialTool":true})
                     item.setCustomName({"text":"打断发言","color":"yellow","italic":false})
                     item.setLore([{"text":"使自己加入他人的发言时段，并重置发言时间","color":"white","italic":false},
-                        {"text":"冷却时间为一个发言时段","color":"white","italic":false},
                         {"text":"所有参与者共享打断的冷却时间，但打断发起者冷却时间额外加一倍","color":"white","italic":false},
-                        {"text":"若当前发言时段为强制发言时段，打断不可用","color":"white","italic":false},
                     ])
                     break
                 case 4:
@@ -587,7 +598,7 @@ PlayerEvents.tick(event =>{
         ' '+roundTimeMin+':'+roundTimeSec+'「观点」'+voteSitu+'"}')
     }
     else if (showContent == "SPEECHER"){
-        server.runCommandSilent('/title '+player.name.string+' actionbar {"text":"「当前」'+speaker+' '+speakTimeMin+':'+speakTimeSec+'「后续」'+nextSpeaker+'"}')
+        server.runCommandSilent('/title '+player.name.string+' actionbar {"text":"「当前」'+speaker+speakTimeMin+':'+speakTimeSec+'「后续」'+nextSpeaker+'"}')
     }
 })
 
@@ -849,6 +860,26 @@ PlayerEvents.chat(event =>{
     event.cancel()
 })
 
+//点歌姬
+ServerEvents.tick(event =>{
+    if (!isJudging){return 0}
+    musicTime --
+    if (musicTime > 0){return 0}
+    let server = event.server
+    if (currentTrialRound <= Math.ceil(setMaxTrialRounds/2)){
+        let mus = Object.keys(normalMusic)[Math.floor(Math.random()*Object.keys(normalMusic).length)]
+        musicTime = normalMusic[mus]
+        server.runCommandSilent("/stopsound @a weather")
+        server.runCommandSilent("/execute as @a at @s run playsound "+mus+" weather @s ~ ~ ~ 0.5 1")
+    }
+    else {
+        let mus = Object.keys(crucialMusic)[Math.floor(Math.random()*Object.keys(crucialMusic).length)]
+        musicTime = crucialMusic[mus]
+        server.runCommandSilent("/stopsound @a weather")
+        server.runCommandSilent("/execute as @a at @s run playsound "+mus+" weather @s ~ ~ ~ 0.5 1")
+    }
+})
+
 //显示当前的发言人
 function displayCurrentSpeecher(){
     if (currentSpeecherForced.length){
@@ -870,7 +901,7 @@ function displayCurrentSpeecher(){
             let result = ''
             for (let i = 0;i < currentSpeecher.length;i++){
                 let majo = currentSpeecher[i]
-                result = result+' '+majo.color+'◆'+majo.name+"§f"
+                result = result+majo.color+'◆'+majo.name+"§f "
             }
             return result
         }

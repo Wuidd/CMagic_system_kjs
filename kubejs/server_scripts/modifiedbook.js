@@ -210,6 +210,7 @@ ItemEvents.rightClicked("minecraft:written_book",event =>{
         }
         logString = String(logString)
         let newBook = writeBookPage(item,logString,true)
+        console.log(newBook)
         server.runCommandSilent("/item replace entity "+player.name.string+" weapon.mainhand with "+newBook)
         server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound exposure:misc.write voice @s")
         player.tell({"text":"已读取日志。","color":"green"})
@@ -341,15 +342,20 @@ function generateBookNewPage(text,strict){
     for (let i=0;i<pageCount;i++){
         let charUsed = 0
         let lineRemain = 19
+        let lineValid = 14
         let index = 0
         for (let j=0;j<textTemp.length;j++){
             if (i == pageCount-1){
                 break
             }
+            if (lineValid <= 0){
+                index = j+2
+                break
+            }
             let char = text.codePointAt(j)
             if (isChineseChar(char)){
                 if (charUsed + 1.5 > charOfPage){
-                    index = j-1
+                    index = j
                     break
                 }
                 charUsed += 1.5
@@ -360,15 +366,24 @@ function generateBookNewPage(text,strict){
             }
             else if (char == 0x000A){
                 if (charUsed + lineRemain > charOfPage){
-                    index = j-1
+                    index = j
                     break
                 }
                 charUsed += lineRemain
                 lineRemain = 19
             }
+            else if (char == 0x005C && text.codePointAt(j+1) == 0x005C && text.codePointAt(j+2) == 0x006E && strict){
+                if (charUsed + lineRemain> charOfPage){
+                    index = j
+                    break
+                }
+                charUsed += lineRemain
+                lineRemain = 19
+                lineValid -= 1
+            }
             else{
                 if (charUsed + 1 > charOfPage){
-                    index = j-1
+                    index = j
                     break
                 }
                 charUsed += 1
@@ -385,7 +400,7 @@ function generateBookNewPage(text,strict){
             else {
                 result += '{raw:"'+textTemp.slice(0,index)+'"},'
             }
-            textTemp = textTemp.slice(index+1)
+            textTemp = textTemp.slice(index)
         }
         else {
             if (strict){

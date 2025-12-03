@@ -10,7 +10,8 @@ function Operator(username,name){
 
 const tsukishiro_yuki = new Operator("NoStay","月代雪")
 const owl_1 = new Operator("name_means_game","典狱长")
-const owl_2 = new Operator("v_t_4","典狱长")
+const owl_2 = new Operator("Ice_sparkle","典狱长")
+const narrator = new Operator("v_t_4","旁白")
 const guard = new Operator("0yiyu0","看守")
 const testor = new Operator("PLTaube","测试人员")
 

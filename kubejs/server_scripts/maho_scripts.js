@@ -99,6 +99,7 @@ PlayerEvents.tick(event =>{
     let majo = isMajoPlayer(player)
     if (majo.name != "宝生玛格"){return 0}
     if (majo.selectedSound >= majo.learnedSound.length || majo.faint){majo.selectedSound = 0}
+    if (majo.selectedSound < 0){majo.selectedSound = majo.learnedSound.length-1}
     let item = player.getMainHandItem()
     if (!item.is("mocai:margo_tarot")){
         item = player.getOffHandItem()
@@ -119,6 +120,15 @@ ItemEvents.rightClicked("mocai:margo_tarot",event=>{
     let majo = isMajoPlayer(player)
     if (majo.name != "宝生玛格"){return 0}
     majo.selectedSound += 1
+})
+
+ItemEvents.firstLeftClicked("mocai:margo_tarot",event=>{
+    if (!isMajoProgressing){return 0}
+    let player = event.player
+    if (!isMajoPlayer(player)){return 0}
+    let majo = isMajoPlayer(player)
+    if (majo.name != "宝生玛格"){return 0}
+    majo.selectedSound -= 1
 })
 
 //汉娜的魔法

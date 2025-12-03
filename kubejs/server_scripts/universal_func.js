@@ -44,7 +44,6 @@ function isMajoPlayer(player){
 function inStructure(player){
     let pos = vecToArr(player.position())
     let level = player.level.name.string
-    level = level.replace("minecraft:","")
     for (let structure of global.structureList){
         if (level != structure.level){continue}
         let area = structure.area
@@ -71,7 +70,6 @@ function inStructure(player){
 function inMemorableSturcture(player){
     let pos = vecToArr(player.position())
     let level = player.level.name.string
-    level = level.replace("minecraft:","")
     for (let structure of global.memorableStructureList){
         if (level != structure.level){continue}
         let area = structure.area
@@ -100,6 +98,74 @@ function inMemorableSturcture(player){
         }
     }
     return null
+}
+
+//玩家是否在指定结构中
+
+function inSpecificStructure(player,name){
+    let structure = findStructure(name)
+    if (!structure){return false}
+    let pos = vecToArr(player.position())
+    let level = player.level.name.string
+    if (level != structure.level){return false}
+    let area = structure.area
+    for (let cube of area){
+        let startApex = cube[0]
+        let endApex = cube[1]
+        if (startApex[0] <= pos[0] && startApex[1] <= pos[1] && startApex[2] <= pos[2] &&
+            endApex[0] >= pos[0] && endApex[1] >= pos[1] && endApex[2] >= pos[2]){
+            return true
+        }
+    }
+    return false
+}
+
+//寻找结构
+
+function findStructure(name){
+    let structure = null
+    for (let s of global.structureList){
+        if (s.name == name){
+            structure = s
+        }
+    }
+    return (structure)
+}
+
+//寻找某结构中的玩家
+
+function findPlayersInStructure(name,server){
+    let structure = findStructure(name)
+    if (!structure){return []}
+    else {
+        let result = []
+        for (let player of server.playerList.players){
+            let pos = vecToArr(player.position())
+            let level = player.level.name.string
+            if (level != structure.level){continue}
+            let area = structure.area
+            for (let cube of area){
+                let startApex = cube[0]
+                let endApex = cube[1]
+                if (startApex[0] <= pos[0] && startApex[1] <= pos[1] && startApex[2] <= pos[2] &&
+                endApex[0] >= pos[0] && endApex[1] >= pos[1] && endApex[2] >= pos[2]){
+                    result.push(player)
+                    break
+                }
+            }
+        }
+        return (result)
+    }
+}
+
+//寻找多个结构的玩家
+
+function findPlayersInMultiStructure(names,server){
+    let result = []
+    for (let name of names){
+        result = result.concat(findPlayersInStructure(name,server))
+    }
+    return result
 }
 
 //搜索指定名字的计分板代表

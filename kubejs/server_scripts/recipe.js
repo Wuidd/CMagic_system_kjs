@@ -31,14 +31,18 @@ ItemEvents.rightClicked("minecraft:writable_book",event =>{
     if (item.customData.getBoolean("Transfered")){
         return 0
     }
+    let server = event.server
     player.closeMenu()
     player.tell({"text":"你决定把这本笔记本专门用作(点击以选择):","color":"green"})
-    player.tell({"text":"-[日记]","click":{"action":"run_command","value":"/tag @s add transferBookToDiary"},"color":"green"})
+    server.runCommandSilent("/scoreboard players enable "+player.name.string+" transferBookToDiary")
+    player.tell({"text":"-[日记]","click":{"action":"run_command","value":"/trigger transferBookToDiary set 1"},"color":"green"})
 })
 
 PlayerEvents.tick(event =>{
     let player = event.player
-    if (!player.tags.contains("transferBookToDiary")){return 0}
+    let server = event.server
+    if (!transferBookToDiary){return 0}
+    if (!server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly(player.name.string),transferBookToDiary).get()){return 0}
     let majo = isMajoPlayer(player)
     if (!majo){return 0}
     let item = player.getOffHandItem()
@@ -57,5 +61,5 @@ PlayerEvents.tick(event =>{
     else {
         player.tell({"text":"需要将普通的笔记本拿在副手……","color":"yellow"})
     }
-    player.tags.remove("transferBookToDiary")
+    server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly(player.name.string),transferBookToDiary).set(0)
 })

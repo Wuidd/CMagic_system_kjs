@@ -13,8 +13,9 @@ let pressure = null //压力计分板
 let jump = null //跳跃计分板
 let hunger = null //饱食度计分板
 let weekdays = null //星期计分板
+let transferBookToDiary = null //日记转化计分板
 const day = $ScoreHolder.forNameOnly("day") //星期计分板的唯一计分项
-let neededScoreBoard = ["Majo_Progress","Fatigue","Pressure","Jump","Hunger","Weekdays"] //必要的计分板目录
+let neededScoreBoard = ["Majo_Progress","Fatigue","Pressure","Jump","Hunger","Weekdays","transferBookToDiary"] //必要的计分板目录
 
 let timeSynsTrigger = true //激活按天结算
 let majolizeTimeTrigger = false //按天结算魔女化进度
@@ -77,8 +78,8 @@ PlayerEvents.loggedOut(event =>{
 
 EntityEvents.death("player",event =>{
     let player = event.player
-    if (!isMajoPlayer(player)){return 0}
     let majo = isMajoPlayer(player)
+    if (!majo){return 0}
     let server = event.server
     let position = vecToArr(event.player.position()).toString()
     let type = event.source.type().msgId()
@@ -281,6 +282,9 @@ function reloadScript(server){
             if (objectives == "Jump"){
                 server.runCommandSilent("/scoreboard objectives add Jump minecraft.custom:minecraft.jump")
             }
+            else if (objectives == "transferBookToDiary"){
+                server.runCommandSilent("/scoreboard objectives add transferBookToDiary trigger")
+            }
             else {
                 server.runCommandSilent("/scoreboard objectives add "+objectives+" dummy")
             }
@@ -295,6 +299,7 @@ function reloadScript(server){
     jump = server.scoreboard.getObjective('Jump')
     hunger = server.scoreboard.getObjective('Hunger')
     weekdays = server.scoreboard.getObjective("Weekdays")
+    transferBookToDiary = server.scoreboard.getObjective("transferBookToDiary")
     let weekDay = server.scoreboard.getOrCreatePlayerScore(day,weekdays)
     if (weekDay.get() == 0){
         weekDay.set(1)

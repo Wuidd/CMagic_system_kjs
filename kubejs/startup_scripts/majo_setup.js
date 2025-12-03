@@ -47,6 +47,8 @@ function Majo(name,height,color,token,physique,mentality){
     this.memorableLog = []
     this.logTimePause = 0
     this.writingLogTimePause = 0
+
+    this.envHintBox = []
 }
 
 //角色卡

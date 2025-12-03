@@ -9,12 +9,12 @@ let sleepHungerDiscount = 0.5 //不在清醒时的饱食度消耗
 
 PlayerEvents.tick(event =>{
     let player = event.player
-    if (!isMajoPlayer(player)){return 0}
-    if (!isMajoProgressing){
+    let majo = isMajoPlayer(player)
+    if (!majo){return 0}
+    if (!isMajoProgressing || majo.majolizeScore>majo.majolize){
         player.setFoodLevel(20)
         return 0
     }
-    let majo = isMajoPlayer(player)
     let server = event.server
     let hungerScore = server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,hunger)
     if (!hungerScore.get() || hungerScore.get() > majo.maxFood){

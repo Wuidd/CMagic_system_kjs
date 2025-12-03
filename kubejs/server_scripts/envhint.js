@@ -1,16 +1,18 @@
 // priority:11
 //环境信息
 
-let dayTicksInOneDay = 24000 //一天的天刻数
-let dayTicksInOneHour = dayTicksInOneDay/24
-let dayTicksInOneMin = dayTicksInOneDay/1440
-let dayTicksInOneSec = dayTicksInOneDay/86400
-let dayTicksEqualToRealisticTicks = 86400*20/dayTicksInOneDay
-let dayTicksEqualToServerTicks = 72000/dayTicksInOneDay
+const dayTicksInOneDay = 24000 //一天的天刻数
+const dayTicksInOneHour = dayTicksInOneDay/24
+const dayTicksInOneMin = dayTicksInOneDay/1440
+const dayTicksInOneSec = dayTicksInOneDay/86400
+const dayTicksEqualToRealisticTicks = 86400*20/dayTicksInOneDay
+const dayTicksEqualToServerTicks = 72000/dayTicksInOneDay
 let noticeTimePauseForMin
-let baseLogTimePause = 30 //最少的日志更新间歇
+const baseLogTimePause = 20 //最少的日志更新间歇
+const envHintPlayTimePause = 30 //环境文本的播放间歇
+const envHintLength = 25 //环境文本的播放长度
 
-let startHourInOneDay = 6 //日出时的小时数
+const startHourInOneDay = 6 //日出时的小时数
 let currentWeekDay = 0
 let currentWeekDayString = '' //当前为星期中的哪一日
 let currentDayHour = 0 //现在的小时数
@@ -22,6 +24,7 @@ let dayNotice = false //防止重复计日
 
 //计时
 ServerEvents.tick(event =>{
+    if (!isMajoProgressing){return 0}
     if (!isFocusMode){
         noticeTimePauseForMin = Math.round(dayTicksInOneMin*dayTicksEqualToServerTicks)
     }
@@ -115,7 +118,7 @@ PlayerEvents.tick(event =>{
         return 0
     }
     else {
-        majo.logTimePause = baseLogTimePause+Math.round(Math.random()*30)
+        majo.logTimePause = baseLogTimePause+Math.round(Math.random()*baseLogTimePause)
     }
     let structure = inStructure(player)
     if (!structure){return 0}
@@ -177,6 +180,117 @@ PlayerEvents.tick(event =>{
     }
 })
 
+//判断角色是否在户外
+PlayerEvents.tick(event =>{
+    let player = event.player
+    let majo = isMajoPlayer(player)
+    if (!majo){return 0}
+    let level = player.level.name.string
+    let pos = vecToArr(player.position())
+    for (let checkPoint of global.checkPointOutDoors){
+        let area = checkPoint.area
+        if (level != checkPoint.level){continue}
+        for (let cube of area){
+            let startApex = cube[0]
+            let endApex = cube[1]
+            if (startApex[0] <= pos[0] && startApex[1] <= pos[1] && startApex[2] <= pos[2] &&
+                endApex[0] >= pos[0] && endApex[1] >= pos[1] && endApex[2] >= pos[2]){
+                let server = event.server
+                server.scheduleInTicks(2,event =>{
+                    if (inSpecificStructure(player,checkPoint.inside.name)){
+                        player.stages.remove("outDoors")
+                    }
+                    else {
+                        player.stages.add("outDoors")
+                    }
+                })
+                return 1
+            }
+        }
+    }
+})
+
+//清晨-牢房 Time=23460
+ServerEvents.tick(event =>{
+    if (!isMajoProgressing){return 0}
+    let server = event.server
+    let level = server.getLevel("minecraft:overworld")
+    let dayTime = level.dayTime()
+    if (dayTime < 23459 || dayTime > 23461){return 0}
+    let players = findPlayersInStructure("牢房",server)
+    switch (dayTime){
+        case 23459:
+            for (let p of players){
+                if (!isMajoPlayer(p)){continue}
+                if (p.isSleeping()){p.stages.add("sleepToMorning")}
+                else {p.stages.remove("sleepToMorning")}
+            }
+            break
+        case 23460:
+            for (let p of players){
+                let majo = isMajoPlayer(p)
+                if (!majo){continue}
+                if (p.stages.has("sleepToMorning") && !p.stages.has("morningTextPushed")){
+                    let hint
+                    if (Math.floor(5*majo.majolizeScore/majo.majolize) < 4 || majo.majolizeMulti == 0){
+                        hint = global.wakeUpText[Math.floor(Math.random()*global.wakeUpText.length)]
+                    }
+                    else {
+                        hint = global.wakeUpMajolizeText[Math.floor(Math.random()*global.wakeUpMajolizeText.length)]
+                    }
+                    let hintCopy = new EnvHint(hint.text,hint.color)
+                    majo.envHintBox.push(hintCopy)
+                    p.stages.add("morningTextPushed")
+                }
+                else if (!p.stages.has("morningTextPushed")){
+                    let hint
+                    if (Math.floor(5*majo.majolizeScore/majo.majolize) < 4 || majo.majolizeMulti == 0){
+                        hint = global.insomniaText[Math.floor(Math.random()*global.insomniaText.length)]
+                    }
+                    else {
+                        hint = global.insomniaMajolizeText[Math.floor(Math.random()*global.insomniaMajolizeText.length)]
+                    }
+                    let hintCopy = new EnvHint(hint.text,hint.color)
+                    majo.envHintBox.push(hintCopy)
+                    p.stages.add("morningTextPushed")
+                }
+            }
+            break
+        case 23461:
+            for (let p of server.playerList.players){
+                p.stages.remove("morningTextPushed")
+                p.stages.remove("sleepToMorning")
+            }
+    }
+})
+
+//环境文本播放器
+PlayerEvents.tick(event =>{
+    let player = event.player
+    if (player.stages.has("envHintPlayTimePause")){return 0}
+    let majo = isMajoPlayer(player)
+    if (!majo){return 0}
+    if (!majo.envHintBox.length){return 0}
+    let server = event.server
+    let hint = majo.envHintBox[0]
+    if (hint.text.length <= envHintLength){
+        player.tell({"text":hint.text,"color":hint.color})
+        player.stages.add("envHintPlayTimePause")
+        majo.envHintBox.splice(0,1)
+        server.scheduleInTicks(envHintPlayTimePause,event =>{
+            player.stages.remove("envHintPlayTimePause")
+        })
+    }
+    else {
+        player.tell({"text":hint.text.slice(0,envHintLength),"color":hint.color})
+        player.stages.add("envHintPlayTimePause")
+        majo.envHintBox[0].text = hint.text.slice(envHintLength)
+        server.scheduleInTicks(envHintPlayTimePause,event =>{
+            player.stages.remove("envHintPlayTimePause")
+        })
+    }
+})
+
 //单条日志生成
 function getActionLog(structure){
     return {
@@ -203,4 +317,10 @@ function numberToStringWithPreZero(number,digitcount){
         return String(fixNumber)
     }
     return String(number)
+}
+
+//环境文本
+function EnvHint(text,color){
+    this.text = text
+    this.color = color
 }

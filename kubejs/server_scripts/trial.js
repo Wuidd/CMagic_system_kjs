@@ -57,6 +57,7 @@ ItemEvents.rightClicked('yuushya:button_sign_notice',event =>{
             isFocusMode = true
             isJudging = true
             roundRepeated = true
+            server.runCommandSilent('/gamerule doDaylightCycle false')
             setMaxTrialRounds = defaultMaxTrialRounds
             currentTrialRound = defaultStartTrialRound
             currentRoundTime = 0
@@ -765,7 +766,7 @@ PlayerEvents.chat(event =>{
         }
         if (!maySpeech && mayRonpa){
             player.tell("§e已准备好论破发言，内容为：")
-            player.tell("§e"+message)
+            player.tell("§e「"+message+"」")
             majo.ronpaWord = message
             event.cancel()
         }

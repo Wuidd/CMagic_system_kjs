@@ -13,13 +13,13 @@ let pressure = null //压力计分板
 let jump = null //跳跃计分板
 let hunger = null //饱食度计分板
 let weekdays = null //星期计分板
+let days = null //日期计分板
 let transferBookToDiary = null //日记转化计分板
-const day = $ScoreHolder.forNameOnly("day") //星期计分板的唯一计分项
-let neededScoreBoard = ["Majo_Progress","Fatigue","Pressure","Jump","Hunger","Weekdays","transferBookToDiary"] //必要的计分板目录
+let neededScoreBoard = ["Majo_Progress","Fatigue","Pressure","Jump","Hunger","Weekdays","Days","transferBookToDiary"] //必要的计分板目录
 
 let timeSynsTrigger = true //激活按天结算
 let majolizeTimeTrigger = false //按天结算魔女化进度
-let basicMajolizeSpeed = 100 //基础魔女化值
+let basicMajolizeSpeed = 100 //基础自然增长魔女化值
 let majolizeInformTimePause = 100 //每隔该tick检查一次魔女化程度
 let emaMajolizeFixTimePause = 1200 //每隔该tick触发一次艾玛的陪伴检定
 
@@ -46,10 +46,11 @@ PlayerEvents.loggedIn(event =>{
         }    
     }
     if (isOperator(player)){
-        isOperator(player).player = player
-        server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+name+'§e◆场务§f'+isOperator(player).name+'"}')
+        let op = isOperator(player)
+        op.player = player
+        server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+name+'§e◆场务 '+op.color+op.name+'"}')
         if (isMajoProgressing){
-            server.runCommandSilent('/hiddennames setName '+name+' name {"text":"◆'+isOperator(player).name+'"}')
+            server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+op.color+'◆'+op.name+'"}')
             server.runCommandSilent("/gamemode spectator "+name)
             player.tell({"text":"演出已经开场了，您已被转换为观察者模式。","color":"green"})
             return true
@@ -70,7 +71,7 @@ PlayerEvents.loggedOut(event =>{
     let server = event.server
     server.runCommandSilent('/hiddennames setName '+name+' reset')
     if (isMajoPlayer(player)){
-        desetUpMajo(event.server,isMajoPlayer(player))
+        majoPlayerAfterfix(event.server,isMajoPlayer(player))
     }
 })
 
@@ -138,13 +139,6 @@ EntityEvents.death("player",event =>{
         }       
     }
     desetUpMajo(server,majo)
-    majo.majolizeScore = 0
-    majo.extraMajolizeMulti = 1
-    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,majoProgress).reset()
-    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,fatigue).reset()
-    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,pressure).reset()
-    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,jump).reset()
-    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,hunger).reset()
 })
 
 //主进程
@@ -170,6 +164,17 @@ ServerEvents.tick(event =>{
     
 })
 
+//魔女的持续修正
+
+ServerEvents.tick(event =>{
+    let majo = findMajo("冰上梅露露")
+    if (majo.player){
+        let player = majo.player
+        player.potionEffects.add("minecraft:resistance",10,4,false,false)
+        player.potionEffects.add("minecraft:regeneration",10,9,false,false)
+    }
+})
+
 //完全魔女化的buff
 
 PlayerEvents.tick(event =>{
@@ -192,7 +197,6 @@ ItemEvents.rightClicked("yuushya:button_sign_play",event =>{
         if (!isMajoProgressing){
             server.runCommandSilent('/title @a title {"text":"❀演出开场❀","color":"light_purple","bold":true}')
             server.runCommandSilent("/execute as @a at @s run playsound minecraft:block.note_block.harp voice @s")
-            server.runCommandSilent('/gamerule doDaylightCycle true')
             isMajoProgressing = true
             for (let player of server.playerList.players){
                 let name = player.name.string
@@ -204,7 +208,8 @@ ItemEvents.rightClicked("yuushya:button_sign_play",event =>{
                     continue
                 }
                 if (isOperator(player)){
-                    server.runCommandSilent('/hiddennames setName '+name+' name {"text":"◆'+isOperator(player).name+'"}')
+                    let op = isOperator(player)
+                    server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+op.color+'◆'+op.name+'"}')
                     player.tell({"text":"请开始您的场务工作。","color":"green"})
                     continue
                 }
@@ -223,13 +228,13 @@ ItemEvents.rightClicked("yuushya:button_sign_play",event =>{
                     continue
                 }
                 if (isOperator(player)){
-                    server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+name+'§e◆场务§f'+isOperator(player).name+'"}')
+                    let op = isOperator(player)
+                    server.runCommandSilent('/hiddennames setName '+name+' name {"text":"'+name+'§e◆场务 '+op.color+op.name+'"}')
                     continue
                 }
             }
             server.runCommandSilent('/title @a title {"text":"❀演出落幕❀","color":"green","bold":true}')
             server.runCommandSilent("/execute as @a at @s run playsound minecraft:block.note_block.harp voice @s")
-            server.runCommandSilent('/gamerule doDaylightCycle false')
             isMajoProgressing = false
             isFocusMode = false
             isJudging = false
@@ -259,13 +264,11 @@ ItemEvents.rightClicked("yuushya:button_sign_bookmark",event =>{
             if (!isFocusMode){
                 player.tell({"text":"焦点模式已启用，长周期系统已暂停生效。","color":"green"})
                 server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bell voice @s")
-                server.runCommandSilent('/gamerule doDaylightCycle false')
                 isFocusMode = true
             }
             else {
                 player.tell({"text":"焦点模式已停用，长周期系统已恢复生效。","color":"yellow"})
                 server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bell voice @s")
-                server.runCommandSilent('/gamerule doDaylightCycle true')
                 isFocusMode = false
             }
         }
@@ -299,8 +302,10 @@ function reloadScript(server){
     jump = server.scoreboard.getObjective('Jump')
     hunger = server.scoreboard.getObjective('Hunger')
     weekdays = server.scoreboard.getObjective("Weekdays")
+    days = server.scoreboard.getObjective("Days")
     transferBookToDiary = server.scoreboard.getObjective("transferBookToDiary")
-    let weekDay = server.scoreboard.getOrCreatePlayerScore(day,weekdays)
+    currentDay = server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly("day"),days).get()
+    let weekDay = server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly("day"),weekdays)
     if (weekDay.get() == 0){
         weekDay.set(1)
     }
@@ -362,8 +367,6 @@ function majoPlayerPrefix(server,majo){
     server.runCommandSilent("/tag "+name+" add majo")
     player.setMaxHealth(majo.maxHealth)
     if (majo.name == "冰上梅露露"){
-        server.runCommandSilent("/effect give "+name+" minecraft:resistance infinite 4 true")
-        server.runCommandSilent("/effect give "+name+" minecraft:regeneration infinite 9 true")
         server.runCommandSilent("/effect give "+name+" mocai:witchfication infinite 3 true")
         server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,majoProgress).set(4*majo.majolize/5+440)
     }
@@ -373,7 +376,13 @@ function majoPlayerPrefix(server,majo){
 
 function desetUpMajo(server,majo){
     majoPlayerAfterfix(server,majo)
-    majo.player = null
+    majo.majolizeScore = 0
+    majo.extraMajolizeMulti = 1
+    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,majoProgress).reset()
+    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,fatigue).reset()
+    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,pressure).reset()
+    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,jump).reset()
+    server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,hunger).reset()
 }
 
 //魔女后修正
@@ -386,11 +395,7 @@ function majoPlayerAfterfix(server,majo){
     server.runCommandSilent("/gamemode spectator "+name)
     server.runCommandSilent("/tag "+name+" remove majo")
     server.runCommandSilent('/hiddennames setName '+name+' reset')
-    if (majo.name == "冰上梅露露"){
-        server.runCommandSilent("/effect clear "+name+" minecraft:resistance")
-        server.runCommandSilent("/effect clear "+name+" minecraft:regeneration")
-        server.runCommandSilent("/effect clear "+name+" mocai:witchfication")
-    }
+    majo.player = null
 }
 
 //魔女化进程
@@ -491,6 +496,7 @@ function majolizeInform(server){
 
 //艾玛的魔女化修正
 
+const emaPressureInfection = 10000 //艾玛对其它人的精力影响
 function emaMajolizeFix(server){
     let ema = findMajo("樱羽艾玛")
     if (!ema.player){return 0}
@@ -503,7 +509,7 @@ function emaMajolizeFix(server){
         if (distance > 5){continue}
         let majo = isMajoPlayer(player)
         let pressureScore = server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,pressure)
-        pressureScore.add(1000)
+        pressureScore.add(emaPressureInfection)
         score.add(-1)
         if (score.get() < 0){score.set(0)}
     }

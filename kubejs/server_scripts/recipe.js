@@ -11,7 +11,8 @@ ItemEvents.rightClicked(event =>{
     if (!offHandItem.is("mocai:tredecim")){return 0}
     for (let attachable of tredecimAttachable){
         if (item.hasTag(attachable) && item.count < 2){
-            event.player.setOffHandItem("air")
+            event.player.setOffHandItem("minecraft:glass_bottle")
+            event.player.getOffHandItem().setLore({"text":"有未知的药液残存其中","color":"light_purple"})
             item.setCustomData(item.customData.merge({"tredecim":true}))
             item.setLore({"text":"有未知的药液附着其上","italic":false,"color":"light_purple"})
         }

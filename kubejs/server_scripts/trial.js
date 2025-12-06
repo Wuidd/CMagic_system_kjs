@@ -57,7 +57,6 @@ ItemEvents.rightClicked('yuushya:button_sign_notice',event =>{
             isFocusMode = true
             isJudging = true
             roundRepeated = true
-            server.runCommandSilent('/gamerule doDaylightCycle false')
             setMaxTrialRounds = defaultMaxTrialRounds
             currentTrialRound = defaultStartTrialRound
             currentRoundTime = 0
@@ -864,8 +863,9 @@ PlayerEvents.chat(event =>{
         event.cancel()
     }
     if (isOperator(player)){
+        let op = isOperator(player)
         for (let receiver of allPlayers){
-            receiver.tell("◆"+isOperator(player).name)
+            receiver.tell(op.color+"◆"+op.name)
             receiver.tell("  "+messagePrefix(message))
         }
         event.cancel()

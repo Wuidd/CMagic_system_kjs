@@ -1,6 +1,7 @@
 // priority:5
 
-let sleepBoost = 2 //睡眠时的恢复乘数
+const sleepBoost = 2 //睡眠时的恢复乘数
+const majolizeDiscount = 0.0025 //休息时对昏迷魔女化的减免
 
 //在指定方块上休息
 
@@ -52,6 +53,6 @@ PlayerEvents.tick(event =>{
         pressureScore.set(0)
     }
     if (majo.majolizeFromFaint > 0){
-        majo.majolizeFromFaint = majo.majolizeFromFaint-0.025*restValue
+        majo.majolizeFromFaint = majo.majolizeFromFaint-majolizeDiscount*restValue
     }
 })

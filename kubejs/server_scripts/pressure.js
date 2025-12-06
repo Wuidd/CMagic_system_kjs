@@ -1,13 +1,13 @@
 // priority:4
 
 //精力系统
-let basicPressureSpeed = 2 //基础压力积累速度
-let extraPressure = 100 //交互时的额外精力消耗
+let basicPressureSpeed = 20 //基础压力积累速度
+let extraPressure = 1000 //交互时的额外精力消耗
 let maxMWPossibility = 0.1 //最大走神可能性
 let maxDropPossibility = 0.0001 //最大每刻脱手可能性
 let maxSleepyPossibility = 0.0003 //最大每刻困倦可能性
 let faintMajolize = 500 //昏迷惩罚
-let faintRecovery = -50 //昏迷时的恢复速度
+let faintRecovery = -500 //昏迷时的恢复速度
 let noPressureCostItem = ["mocai:margo_tarot","minecraft:clock","minecraft:air","mocai:hannafan"] //无须消耗精力互动的物品
 
 //主进程

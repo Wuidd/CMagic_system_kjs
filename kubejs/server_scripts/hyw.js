@@ -4,8 +4,8 @@
 PlayerEvents.tick(event =>{
     let player = event.player
     if (player.isSpectator()){return 0}
-    if (!isOperator(player)){return 0}
     let op = isOperator(player)
+    if (!op){return 0}
     if (op.name != "月代雪"){return 0}
     let server = event.server
     if (player.shiftKeyDown && op.flipTrigger > -1){

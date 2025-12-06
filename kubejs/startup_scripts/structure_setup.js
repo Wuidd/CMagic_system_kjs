@@ -13,8 +13,8 @@ function Structure(name,area,level){
 
 const canteen = new Structure("食堂",[[[17,36,-82],[37,43,-50]]],"minecraft:overworld")
 const kitchen = new Structure("厨房",[[[37,36,-83],[20,43,-91]]],"minecraft:overworld")
-const trialchamber_hallway = new Structure("审判庭入口走廊",[[[7,37,-75],[16,44,-15]],[[17,37,-48],[37,44,-15]],[[4,37,-25],[6,44,-19]]],"minecraft:overworld")
-const trialchamber = new Structure("审判庭",[[[38,37,-43],[74,41,-39]],[[47,37,-90],[95,60,-42]]],"minecraft:overworld")
+const trialchamber_hallway = new Structure("审判庭入口走廊",[[[7,37,-75],[16,44,-15]],[[17,37,-48],[37,44,-15]],[[4,37,-25],[6,44,-19]],[[38,37,-43],[74,41,-39]]],"minecraft:overworld")
+const trialchamber = new Structure("审判庭",[[[47,37,-90],[95,60,-42]]],"minecraft:overworld")
 const entrancehall = new Structure("玄关大厅",[[[-27,36,-45],[-20,44,-15]],[[-19,37,-40],[3,44,-15]]],"minecraft:overworld")
 const entrancehall_hallway = new Structure("玄关门道",[[[-27,36,-14],[-21,44,-6]]],"minecraft:overworld")
 entrancehall_hallway.attachTo = entrancehall

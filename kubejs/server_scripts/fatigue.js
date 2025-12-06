@@ -3,7 +3,7 @@
 let basicFatigueSpeed = 5 //基础疲劳积累速度
 let basicDeFatigueSpeed = -8 //基础疲劳削减速度
 let exhaustedDeFatigueSpeed = -4 //力竭后疲劳削减速度
-let exhaustedPressure = 80000 //力竭压力惩罚
+let exhaustedPressure = 800000 //力竭压力惩罚
 let waterFatigueSpeed = 5 // 在水中的额外疲劳积累速度
 let jumpMulti = 50 //跳跃的额外疲劳乘数
 let fatigueShaderTimePause = 20 //疲劳视野遮罩的间歇
@@ -48,7 +48,7 @@ PlayerEvents.tick(event =>{
         majo.exhausted = true
     }
     if (fatigueStage > 3){
-        totalSpeedMulti = majo.speedMulti*(2-1/(2*(1-fatigueScore.get()/(majo.maxFatigue+600))))-3*(Math.max(0.01,majo.fatigueMultiFromPressure/100)-0.01)
+        totalSpeedMulti = majo.speedMulti*(2-1/(2*(1-fatigueScore.get()/(majo.maxFatigue+3600))))-3*(Math.max(0.01,majo.fatigueMultiFromPressure/100)-0.01)
         if (majo.exhausted){
             totalSpeedMulti -= 100
         }
@@ -75,7 +75,7 @@ PlayerEvents.tick(event =>{
     }
     if (jumpCount.get() > 0 && !majo.faint){
         fatigueScore.add(Math.ceil(basicFatigueSpeed*majo.fatigueMulti*jumpMulti*majo.fatigueMultiFromPressure))
-        majo.extraFoodNeedFromSporting = jumpMulti*player.totalMovementSpeed/player.defaultMovementSpeed
+        majo.extraFoodNeedFromSporting = (jumpMulti/10)*player.totalMovementSpeed/player.defaultMovementSpeed
         jumpCount.set(0)
         sporting = true
     }

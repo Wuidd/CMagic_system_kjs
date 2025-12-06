@@ -9,8 +9,6 @@ let shoutRadius = [35,40,45] //大声发的收听范围
 let talkRadius = [8,12,16] //普通谈话的收听范围
 let whispRadius = [2,3,4] //耳语的收听范围
 let localRadius = shoutRadius[2] //本地听取的收听范围
-let disableEffectTimePause = 20 //消除禁用效果的间隔
-let nightSpeedMulti = 0.5 //夜晚流逝速度
 
 //禁用掉落物消失且禁用丢出特殊物品
 
@@ -32,9 +30,29 @@ ItemEvents.dropped(event =>{
 ServerEvents.tick(event =>{
     let server = event.server
     let time = server.tickCount
-    if (time % disableEffectTimePause == 0){
-        server.runCommandSilent('/effect clear @a kaleidoscope_cookery:flatulence')
-        server.runCommandSilent('/effect clear @a kaleidoscope_cookery:satiated_shield')
+    server.runCommandSilent('/effect clear @a kaleidoscope_cookery:flatulence')
+    server.runCommandSilent('/effect clear @a kaleidoscope_cookery:satiated_shield')
+})
+
+//禁用指令
+
+ServerEvents.command("tell",event =>{
+    let result = event.parseResults.context
+    let source = result.source
+    let player = source.player
+    if (!player.op){
+        player.tell({"text":"无权使用。","color":"red"})
+        event.cancel()
+    }
+})
+
+ServerEvents.command("msg",event =>{
+    let result = event.parseResults.context
+    let source = result.source
+    let player = source.player
+    if (!player.op){
+        player.tell({"text":"无权使用。","color":"red"})
+        event.cancel()
     }
 })
 
@@ -56,8 +74,9 @@ PlayerEvents.chat(event =>{
             event.cancel()
         }
         if (isOperator(player)){
+            let op = isOperator(player)
             for (let receiver of allPlayers){
-                receiver.tell("<"+username+"§e◆场务§f "+isOperator(player).name+"> "+message)
+                receiver.tell("<"+username+"§e◆场务 "+op.color+op.name+"> "+message)
             }
             event.cancel()
         }
@@ -200,6 +219,7 @@ PlayerEvents.chat(event =>{
             event.cancel()
         }
         if (isOperator(player)){
+            let op = isOperator(player)
             if (message == "#local"){
                 server.runCommandSilent("/execute as "+username+" at @s run playsound minecraft:block.note_block.harp voice @s")
                 if (!player.stages.has("#local")){
@@ -226,7 +246,7 @@ PlayerEvents.chat(event =>{
             }
             for (let receiver of allPlayers){
                 if (isMajoPlayer(receiver)){
-                    let speaker = "◆"+isOperator(player).name
+                    let speaker = op.color+"◆"+op.name
                     let radiusSet = []
                     switch (message.charCodeAt(0)){
                         case "%":
@@ -257,7 +277,7 @@ PlayerEvents.chat(event =>{
                         let distance = receiver.distanceToEntity(player)
                         if (distance > localRadius){continue}
                     }
-                    receiver.tell("◆"+isOperator(player).name)
+                    receiver.tell(op.color+"◆"+op.name)
                     receiver.tell("  "+messagePrefix(message))
                 }
             }
@@ -322,24 +342,6 @@ ServerEvents.tick(event =>{
             player.potionEffects.add("minecraft:resistance",10,4,false,false)
         }    
     } 
-})
-
-//临时允许夜间时间流动
-
-ServerEvents.tick(event =>{
-    if (!isMajoProgressing){return 0}
-    if (isFocusMode){return 0}
-    let server = event.server
-    if (!server.getLevel("overworld").isNight()){return 0}
-    let time = server.tickCount
-    if (time % Math.floor(1/nightSpeedMulti) == 0){
-        for (let player of server.playerList.players){
-            if (player.sleeping){
-                server.runCommandSilent("/time add 1")
-                return 1
-            }
-        }
-    }
 })
 
 //禁用方块破坏

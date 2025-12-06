@@ -6,94 +6,130 @@ const dayTicksInOneHour = dayTicksInOneDay/24
 const dayTicksInOneMin = dayTicksInOneDay/1440
 const dayTicksInOneSec = dayTicksInOneDay/86400
 const dayTicksEqualToRealisticTicks = 86400*20/dayTicksInOneDay
-const dayTicksEqualToServerTicks = 72000/dayTicksInOneDay
-let noticeTimePauseForMin
 const baseLogTimePause = 20 //最少的日志更新间歇
+const totalLogUpLim = 500 //全日志的最大数量
+const memorableLogUpLim = 100 //可记日志的最大数量
 const envHintPlayTimePause = 30 //环境文本的播放间歇
 const envHintLength = 25 //环境文本的播放长度
 
 const startHourInOneDay = 6 //日出时的小时数
+let currentDay = 0 //当前日
+let oldDay = -1 //旧日时间戳
 let currentWeekDay = 0
 let currentWeekDayString = '' //当前为星期中的哪一日
 let currentDayHour = 0 //现在的小时数
-let oldDayHour = -1 //上一个小时时间戳
+let oldDayHour = -1 //旧小时时间戳
 let currentDayMin = 0  //现在的分钟数
+let oldDayMin = 0 //旧分钟时间戳
 let currentDaySec = 0 //现在的秒数
-let clockNotice = false //防止重复报时
-let dayNotice = false //防止重复计日
+
+let dayTickPause = 0 //流逝间歇
+const dayTickPauseInDay = 4 //白天流逝时间除数
+const dayTickPauseInNight = 2 //夜晚流逝时间除数
+const serverTicksInOneDay = 12000*(dayTickPauseInDay+dayTickPauseInNight)
+
+//接管时间控制
+ServerEvents.tick(event =>{
+    let server = event.server
+    let level = server.getLevel("minecraft:overworld")
+    let time = level.dayTime()
+    if (!isMajoProgressing){return 0}
+    if (isFocusMode){
+        if (dayTickPause <= 0){
+            dayTickPause = dayTicksEqualToRealisticTicks
+            level.setDayTime(time+1)
+        }
+        else {
+            dayTickPause -= 1
+        }
+    }
+    else if (level.isNight()){
+        if (dayTickPause <= 0){
+            dayTickPause = dayTickPauseInNight
+            level.setDayTime(time+1)
+        }
+        else {
+            dayTickPause -= 1
+        }
+    }
+    else {
+        if (dayTickPause <= 0){
+            dayTickPause = dayTickPauseInDay
+            level.setDayTime(time+1)
+        }
+        else {
+            dayTickPause -= 1
+        }
+    }
+})
 
 //计时
 ServerEvents.tick(event =>{
     if (!isMajoProgressing){return 0}
-    if (!isFocusMode){
-        noticeTimePauseForMin = Math.round(dayTicksInOneMin*dayTicksEqualToServerTicks)
-    }
-    else {
-        noticeTimePauseForMin = Math.round(dayTicksInOneMin*dayTicksEqualToRealisticTicks)
-    }
     let server = event.server
     let level = server.getLevel("overworld")
     currentDayHour = Math.floor(level.dayTime()/dayTicksInOneHour)+startHourInOneDay
     currentDayMin = Math.floor((level.dayTime()-(currentDayHour-startHourInOneDay)*dayTicksInOneHour)/dayTicksInOneMin)
+    server.runCommandSilent("/execute store result score day Days run time query day")
+    if (weekdays){
+        currentWeekDay = server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly("day"),weekdays).get()
+    }
     if (currentDayHour >= 24){
         currentDayHour = currentDayHour % 24
     }
-    if (level.dayTime() % Math.round(dayTicksInOneHour) == 0 && !clockNotice){
+    if (currentDayMin == 0 && currentDayMin != oldDayMin){
         for (let player of server.playerList.players){
             player.tell({"text":"钟声敲响，现在是"+currentDayHour+":00","color":"yellow"})
         }
-        clockNotice = true
-        server.scheduleInTicks(noticeTimePauseForMin,event =>{
-            clockNotice = false
-        })
     }
-    if (day && weekdays && currentDayHour < oldDayHour && !dayNotice){
-        dayNotice = true
-        let weekDay = server.scoreboard.getOrCreatePlayerScore(day,weekdays)
-        weekDay.add(1)
-        if (weekDay.get() > 7){
-            weekDay.set(1)
+    if (weekdays && oldDay >= 0 && oldDayHour >= 0){
+        let shouldChangeDay = false
+        if (currentDayHour < 6){
+            if (currentDayHour < oldDayHour){
+                shouldChangeDay = true
+                currentDay += 1
+            }
         }
-        currentWeekDay = weekDay.get()
-        switch(weekDay.get()){
-            case 1:
-                currentWeekDayString = '周一'
-                break
-            case 2:
-                currentWeekDayString = '周二'
-                break
-            case 3:
-                currentWeekDayString = '周三'
-                break
-            case 4:
-                currentWeekDayString = '周四'
-                break
-            case 5:
-                currentWeekDayString = '周五'
-                break
-            case 6:
-                currentWeekDayString = '周六'
-                break
-            case 7:
-                currentWeekDayString = '周日'
-                break
+        else {
+            currentDay = server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly("day"),days).get()
+            if (currentDay > oldDay){
+                shouldChangeDay = true
+            }
         }
-        server.scheduleInTicks(noticeTimePauseForMin,event =>{
-            dayNotice = false
-        })
+        if (shouldChangeDay){
+            let weekDay = server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly("day"),weekdays)
+            weekDay.add(1)
+            if (weekDay.get() > 7){
+                weekDay.set(1)
+            }
+            switch(weekDay.get()){
+                case 1:
+                    currentWeekDayString = '周一'
+                    break
+                case 2:
+                    currentWeekDayString = '周二'
+                    break
+                case 3:
+                    currentWeekDayString = '周三'
+                    break
+                case 4:
+                    currentWeekDayString = '周四'
+                    break
+                case 5:
+                    currentWeekDayString = '周五'
+                    break
+                case 6:
+                    currentWeekDayString = '周六'
+                    break
+                case 7:
+                    currentWeekDayString = '周日'
+                    break
+            }
+        }
     }
+    oldDay = currentDay
     oldDayHour = currentDayHour
-})
-
-//焦点模式的计时
-ServerEvents.tick(event =>{
-    if (!isMajoProgressing){return 0}
-    if (!isFocusMode){return 0}
-    let server = event.server
-    let time = server.tickCount
-    if (time % Math.ceil(dayTicksEqualToRealisticTicks) == 0){
-        server.runCommandSilent("/time add 1")
-    }
+    oldDayMin = currentDayMin
 })
 
 //为旁观者报时
@@ -149,6 +185,9 @@ PlayerEvents.tick(event =>{
         else {
             majo.totalLog.push(getActionLog(structure))
         }
+        if (majo.totalLog.length > totalLogUpLim){
+            majo.totalLog.splice(0,1)
+        }
     }
     if (!memorableStructure){return 0}
     if (!majo.memorableLog.length){
@@ -176,6 +215,9 @@ PlayerEvents.tick(event =>{
         }
         else {
             majo.memorableLog.push(getActionLog(memorableStructure))
+        }
+        if (majo.memorableLog.length > memorableLogUpLim){
+            majo.memorableLog.splice(0,1)
         }
     }
 })
@@ -261,6 +303,71 @@ ServerEvents.tick(event =>{
                 p.stages.remove("morningTextPushed")
                 p.stages.remove("sleepToMorning")
             }
+            break
+    }
+})
+
+//宵禁-牢房 Time=16000
+ServerEvents.tick(event =>{
+    if (!isMajoProgressing){return 0}
+    let server = event.server
+    let level = server.getLevel("minecraft:overworld")
+    let dayTime = level.dayTime()
+    if (dayTime < 16000 || dayTime > 16001){return 0}
+    let players = findPlayersInStructure("牢房",server)
+    switch (dayTime){
+        case 16000:
+            for (let p of players){
+                let majo = isMajoPlayer(p)
+                if (!majo){continue}
+                if (!p.stages.has("curfewTextPushed")){
+                    let hint
+                    if (Math.floor(5*majo.majolizeScore/majo.majolize) < 4 || majo.majolizeMulti == 0){
+                        hint = global.curfewText[Math.floor(Math.random()*global.curfewText.length)]
+                    }
+                    else {
+                        hint = global.curfewMajolizeText[Math.floor(Math.random()*global.curfewMajolizeText.length)]
+                    }
+                    let hintCopy = new EnvHint(hint.text,hint.color)
+                    majo.envHintBox.push(hintCopy)
+                    p.stages.add("curfewTextPushed")
+                }
+            }
+            break
+        case 16001:
+            for (let p of server.playerList.players){
+                p.stages.remove("curfewTextPushed")
+            }
+            break
+    }
+})
+
+//宵禁-户外 Time=16000
+ServerEvents.tick(event =>{
+    if (!isMajoProgressing){return 0}
+    let server = event.server
+    let level = server.getLevel("minecraft:overworld")
+    let dayTime = level.dayTime()
+    if (dayTime < 16000 || dayTime > 16001){return 0}
+    switch (dayTime){
+        case 16000:
+            for (let majo of global.majoList){
+                if (majo.player){
+                    let player = majo.player
+                    if (player.stages.has("outDoors") && !player.stages.has("curfewTextPushed")){
+                        let hint = global.stayOutText[Math.floor(Math.random()*global.stayOutText.length)]
+                        let hintCopy = new EnvHint(hint.text,hint.color)
+                        majo.envHintBox.push(hintCopy)
+                        player.stages.add("curfewTextPushed")
+                    }
+                }
+            }
+            break
+        case 16001:
+            for (let p of server.playerList.players){
+                p.stages.remove("curfewTextPushed")
+            }
+            break
     }
 })
 

@@ -59,6 +59,7 @@ BlockEvents.rightClicked(event =>{
     if (food){
         if (food.getFoodProperties){
             let property = food.getFoodProperties(foodBlock.id,player)
+            if (!property){return 0}
             let nutrition = property.nutrition()
             let saturation = property.saturation()
             if (property && nutrition && saturation){

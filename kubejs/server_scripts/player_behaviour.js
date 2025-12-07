@@ -76,7 +76,7 @@ PlayerEvents.chat(event =>{
         if (isOperator(player)){
             let op = isOperator(player)
             for (let receiver of allPlayers){
-                receiver.tell("<"+username+"§e◆场务 "+op.color+op.name+"> "+message)
+                receiver.tell("<"+username+"§e◆场务 "+op.color+op.name+"§f> "+message)
             }
             event.cancel()
         }

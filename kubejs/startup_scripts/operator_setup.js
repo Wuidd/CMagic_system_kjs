@@ -13,7 +13,7 @@ const tsukishiro_yuki = new Operator("NoStay","月代雪","§f")
 const owl_1 = new Operator("name_means_game","典狱长","§8")
 const owl_2 = new Operator("Ice_sparkle","典狱长","§8")
 const narrator = new Operator("v_t_4","旁白","§f")
-const guard = new Operator("0yiyu0","看守","§8")
+const guard = new Operator("ExhaleYiyu","看守","§8")
 const testor = new Operator("PLTaube","测试人员","§e")
 const filmer = new Operator("RevontuleTan","摄影","§e")
 

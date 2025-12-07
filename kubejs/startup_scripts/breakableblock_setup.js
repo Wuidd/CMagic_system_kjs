@@ -6,5 +6,6 @@ global.breakableBlockList = ["air","supplementaries:book_pile_horizontal","sleep
  'kaleidoscope_cookery:golden_salad','kaleidoscope_cookery:spicy_chicken','kaleidoscope_cookery:yakitori','kaleidoscope_cookery:pan_seared_knight_steak','kaleidoscope_cookery:stargazy_pie',
  'kaleidoscope_cookery:sweet_and_sour_ender_pearls','kaleidoscope_cookery:crystal_lamb_chop','kaleidoscope_cookery:blaze_lamb_chop','kaleidoscope_cookery:frost_lamb_chop',
  'kaleidoscope_cookery:nether_style_sashimi','kaleidoscope_cookery:end_style_sashimi','kaleidoscope_cookery:desert_style_sashimi','kaleidoscope_cookery:tundra_style_sashimi',
- 'kaleidoscope_cookery:cold_style_sashimi','kaleidoscope_cookery:shengjian_mantou','minecraft:bamboo','minecraft:brown_mushroom','minecraft:red_mushroom','kaleidoscope_cookery:fruit_basket'
+ 'kaleidoscope_cookery:cold_style_sashimi','kaleidoscope_cookery:shengjian_mantou','minecraft:bamboo','minecraft:brown_mushroom','minecraft:red_mushroom','kaleidoscope_cookery:fruit_basket',
+ "minecraft:bamboo_block"
 ]

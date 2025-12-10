@@ -210,7 +210,6 @@ ItemEvents.rightClicked("minecraft:written_book",event =>{
         }
         logString = String(logString)
         let newBook = writeBookPage(item,logString,true)
-        console.log(newBook)
         server.runCommandSilent("/item replace entity "+player.name.string+" weapon.mainhand with "+newBook)
         server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound exposure:misc.write voice @s")
         player.tell({"text":"已读取日志。","color":"green"})
@@ -248,6 +247,178 @@ ItemEvents.firstLeftClicked("minecraft:written_book",event =>{
     player.tell({"text":"已擦除日志。","color":"yellow"})
 })
 
+//翻译书籍
+ServerEvents.commandRegistry(event =>{
+    let {arguments:arg,commands:cmd} = event
+    function translateTo(player,book,language,replace,server){
+        let op = isOperator(player)
+        if (!op){
+            player.tell({"text":"无权使用。","color":"red"})
+            return 0
+        }
+        if (!book.is("minecraft:writable_book") && !book.is("minecraft:written_book")){
+            player.tell({"text":"未识别到书籍。","color":"yellow"})
+            return 0
+        }
+        if (language != "lojban" && language != "chinese"){
+            player.tell({"text":"未知的语言。","color":"yellow"})
+            return 0
+        }
+        let newBook = translate(book,language,[])
+        if (!newBook){
+            player.tell({"text":"无可转译的内容。","color":"yellow"})
+            return 0
+        }
+        else {
+            if (!replace){
+                player.tell({"text":"转译完成。","color":"green"})
+                server.runCommandSilent("/give "+player.name.string+" "+newBook)
+            }
+            else {
+                player.tell({"text":"转译完成。","color":"green"})
+                server.runCommandSilent("/item replace entity "+player.name.string+" weapon.mainhand with "+newBook)
+            }
+        }
+    }
+    event.register(
+        cmd.literal('translate-to')
+        .then(cmd.argument('language',arg.STRING.create(event))
+        .executes(cmd =>{
+            let player = cmd.source.playerOrException
+            let book = player.getMainHandItem()
+            let language = arg.STRING.getResult(cmd,'language')
+            let server = cmd.source.server
+            translateTo(player,book,language,false,server)
+            return 1
+        })
+        .then(cmd.argument('replace',arg.BOOLEAN.create(event))
+        .executes(cmd =>{
+            let player = cmd.source.playerOrException
+            let book = player.getMainHandItem()
+            let language = arg.STRING.getResult(cmd,'language')
+            let replace = arg.BOOLEAN.getResult(cmd,'replace')
+            let server = cmd.source.server
+            translateTo(player,book,language,replace,server)
+            return 1
+        })))
+    )
+})
+
+ItemEvents.rightClicked("minecraft:written_book",event =>{
+    if (!isMajoProgressing){return 0}
+    let player = event.player
+    let offBook = player.getOffHandItem()
+    if (offBook.customData.getString("TransferToType") != "TRANSLATE"){return 0}
+})
+
+//翻译书本内容
+function translate(book,toLanguage,keyWords){
+    for (let bookType of ["minecraft:writable_book","minecraft:written_book"]){
+        if (!book.is(bookType)){continue}
+        let NBT = '\['
+        for (let key of Object.keys(book.toNBT()["components"])){
+            if (key != bookType+"_content"){
+                NBT += key+'='+String(book.toNBT()["components"][key])+','
+            }
+        }
+        if (Object.keys(book.toNBT()["components"]).includes(bookType+"_content")){
+            let content = book.toNBT()["components"][bookType+"_content"]
+            let author = ''
+            let resolved = ''
+            let title = ''
+            if (bookType == "minecraft:written_book"){
+                if (Object.keys(content).includes("author")){
+                    author = 'author:'+String(content["author"])+','
+                }
+                if (Object.keys(content).includes("resolved")){
+                    resolved = ',resolved:1b,'
+                }
+                if (Object.keys(content).includes("title")){
+                    title = 'title:{raw:'+String(content["title"]["raw"])+'}'
+                }
+            }
+            let pages = content["pages"]
+            let newPages = ''
+            for (let i=0;i<pages.length;i++){
+                let text = ''
+                for (let j=i;j<pages.length;j++){
+                    let newText = String(pages[j]["raw"])
+                    let newTextChar
+                    if (bookType == "minecraft:written_book"){
+                        newText = newText.slice(2).slice(0,newText.length-4)
+                        newTextChar = charUsedInThePage(newText)
+                    }
+                    else {
+                        newText = newText.slice(1).slice(0,newText.length-2)
+                        newTextChar = charUsedInThePage(newText)
+                    }
+                    text += newText
+                    if (newTextChar < 252){
+                        break
+                    }
+                    else {
+                        i=j+1
+                    }
+                }
+                if (toLanguage == "chinese"){
+                    if (!keyWords.length){
+                        text = text.replace(/\s+/g,'\×')
+                        for (let keyWord of global.lojDictKeys){
+                            let regex = `\\b(${keyWord})\\b`
+                            regex = new RegExp(keyWord,"g")
+                            text = text.replace(regex,match => global.lojDict[match] || match)
+                        }
+                        text = text.replace(/\×/g,'')
+                    }
+                    else {
+                        text = text.replace(/\s+/g,'\×')
+                        for (let keyWord of keyWords){
+                            if (Object.keys(global.lojDict).includes(keyWord)){
+                                let regex = `\\b(${keyWord})\\b`
+                                regex = new RegExp(keyWord,"g")
+                                text = text.replace(regex,match => global.lojDict[match] || match)
+                            }
+                        }
+                        text = text.replace(/\×/g,'')
+                    }
+                }
+                else if (toLanguage == "lojban"){
+                    if (!keyWords.length){
+                        for (let keyWord of Object.keys(global.lojDictReverse)){
+                            let regex = `\\b(${keyWord})\\b`
+                            regex = new RegExp(keyWord,"g")
+                            text = text.replace(regex,match => global.lojDictReverse[match]+' ' || match)
+                        }
+                    }
+                    else {
+                        for (let keyWord of keyWords){
+                            if (Object.keys(global.lojDictReverse).includes(keyWord)){
+                                let regex = `\\b(${keyWord})\\b`
+                                regex = new RegExp(keyWord,"g")
+                                text = text.replace(regex,match => global.lojDictReverse[match]+' ' || match)
+                            }
+                        }
+                    }
+                }
+                if (bookType == "minecraft:written_book"){
+                    newPages += generateBookNewPage(text,true)
+                }
+                else {
+                    newPages += generateBookNewPage(text)
+                }
+                if (i < pages.length-1){
+                    newPages += ','
+                }
+            }
+            NBT += bookType+"_content={"+author+"pages:\["+String(newPages)+"]"+resolved+title+"}]"
+            return bookType+NBT
+        }
+        else {
+            return null
+        }
+    }
+}
+
 //续写书页，shouldNew表示是否强制新开书页
 function writeBookPage(book,text,shouldNew){
     for (let bookType of ["minecraft:writable_book","minecraft:written_book"]){
@@ -258,7 +429,13 @@ function writeBookPage(book,text,shouldNew){
                 NBT += key+'='+String(book.toNBT()["components"][key])+','
             }
         }
-        let textChar = charUsedInThePage(text)
+        let textChar
+        if (bookType == "minecraft:written_book"){
+            textChar = charUsedInThePage(text)
+        }
+        else {
+            textChar = charUsedInThePage(text)
+        }
         if (Object.keys(book.toNBT()["components"]).includes(bookType+"_content")){
             let content = book.toNBT()["components"][bookType+"_content"]
             let author = ''
@@ -277,13 +454,15 @@ function writeBookPage(book,text,shouldNew){
             }
             let pages = content["pages"]
             let lastPage = String(pages[pages.length-1]['raw'])
+            let pageChar
             if (bookType == "minecraft:written_book"){
                 lastPage = lastPage = lastPage.slice(2).slice(0,lastPage.length-3)
+                pageChar = charUsedInThePage(lastPage)
             }
             else {
                 lastPage = lastPage.slice(1).slice(0,lastPage.length-2)
+                pageChar = charUsedInThePage(lastPage)
             }
-            let pageChar = charUsedInThePage(lastPage)
             if (pageChar+textChar > charOfPage || shouldNew){
                 if (Math.ceil(textChar/charOfPage) <= pagesOfBook-pages.length){
                     let newPages
@@ -324,7 +503,7 @@ function writeBookPage(book,text,shouldNew){
                 else {
                     newPages = generateBookNewPage(text,false)
                 }
-                NBT += bookType+"_content={"+author+"pages:["+newPages+"]"+resolved+title+"}]"
+                NBT += bookType+"_content={"+author+"pages:\["+newPages+"]"+resolved+title+"}]"
                 return bookType+NBT
             }
             else {
@@ -404,10 +583,10 @@ function generateBookNewPage(text,strict){
         }
         else {
             if (strict){
-                result += '{raw:"\''+textTemp+'\'"},'
+                result += '{raw:"\''+textTemp+'\'"}'
             }
             else {
-                result += '{raw:"'+textTemp+'"},'
+                result += '{raw:"'+textTemp+'"}'
             }
         }
     }

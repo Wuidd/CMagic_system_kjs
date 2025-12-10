@@ -24,9 +24,10 @@ let oldDayMin = 0 //旧分钟时间戳
 let currentDaySec = 0 //现在的秒数
 
 let dayTickPause = 0 //流逝间歇
-const dayTickPauseInDay = 4 //白天流逝时间除数
-const dayTickPauseInNight = 2 //夜晚流逝时间除数
-const serverTicksInOneDay = 12000*(dayTickPauseInDay+dayTickPauseInNight)
+const dayTickPauseInDay = 3 //白天流逝时间间隔刻
+const dayTickPauseInNight = 1 //夜晚流逝时间间隔刻
+const serverTicksInOneDay = 12000*(dayTickPauseInDay+1+dayTickPauseInNight+1)
+let timeSpeedMulti = 1 //流速倍率
 
 //接管时间控制
 ServerEvents.tick(event =>{
@@ -46,7 +47,12 @@ ServerEvents.tick(event =>{
     else if (level.isNight()){
         if (dayTickPause <= 0){
             dayTickPause = dayTickPauseInNight
-            level.setDayTime(time+1)
+            if (time > 13000 && time < 23200){
+                level.setDayTime(time+1*timeSpeedMulti)
+            }
+            else {
+                level.setDayTime(time+1)
+            }
         }
         else {
             dayTickPause -= 1
@@ -130,6 +136,32 @@ ServerEvents.tick(event =>{
     oldDay = currentDay
     oldDayHour = currentDayHour
     oldDayMin = currentDayMin
+})
+
+//睡眠时加速
+
+ServerEvents.tick(event =>{
+    if (!isMajoProgressing){return 0}
+    if (isFocusMode){
+        timeSpeedMulti = 1
+        return 0
+    }
+    let level = event.server.getLevel("overworld")
+    if (level.day){return 0}
+    let time = level.dayTime()
+    if (time <= 13000 && time >= 23200){
+        return 0
+    }
+    for (let majo of global.majoList){
+        let player = majo.player
+        if (majo.player){
+            if (!player.isSleeping()){
+                timeSpeedMulti = 1
+                return 0
+            }
+            timeSpeedMulti = 20
+        }
+    }
 })
 
 //为旁观者报时
@@ -307,17 +339,23 @@ ServerEvents.tick(event =>{
     }
 })
 
-//宵禁-牢房 Time=16000
+//宵禁 Time=16000
 ServerEvents.tick(event =>{
     if (!isMajoProgressing){return 0}
     let server = event.server
     let level = server.getLevel("minecraft:overworld")
     let dayTime = level.dayTime()
     if (dayTime < 16000 || dayTime > 16001){return 0}
-    let players = findPlayersInStructure("牢房",server)
+    let playersInJail = findPlayersInStructure("牢房",server)
+    let playersOutDoors = []
+    for (let player of server.playerList.players){
+        if (player.stages.has("outDoors") && !player.stages.has("curfewTextPushed")){
+            playersOutDoors.push(player)
+        }
+    }
     switch (dayTime){
         case 16000:
-            for (let p of players){
+            for (let p of playersInJail){
                 let majo = isMajoPlayer(p)
                 if (!majo){continue}
                 if (!p.stages.has("curfewTextPushed")){
@@ -333,33 +371,12 @@ ServerEvents.tick(event =>{
                     p.stages.add("curfewTextPushed")
                 }
             }
-            break
-        case 16001:
-            for (let p of server.playerList.players){
-                p.stages.remove("curfewTextPushed")
-            }
-            break
-    }
-})
-
-//宵禁-户外 Time=16000
-ServerEvents.tick(event =>{
-    if (!isMajoProgressing){return 0}
-    let server = event.server
-    let level = server.getLevel("minecraft:overworld")
-    let dayTime = level.dayTime()
-    if (dayTime < 16000 || dayTime > 16001){return 0}
-    switch (dayTime){
-        case 16000:
-            for (let majo of global.majoList){
-                if (majo.player){
-                    let player = majo.player
-                    if (player.stages.has("outDoors") && !player.stages.has("curfewTextPushed")){
-                        let hint = global.stayOutText[Math.floor(Math.random()*global.stayOutText.length)]
-                        let hintCopy = new EnvHint(hint.text,hint.color)
-                        majo.envHintBox.push(hintCopy)
-                        player.stages.add("curfewTextPushed")
-                    }
+            for (let p of playersOutDoors){
+                if (!p.stages.has("curfewTextPushed")){
+                    let hint = global.stayOutText[Math.floor(Math.random()*global.stayOutText.length)]
+                    let hintCopy = new EnvHint(hint.text,hint.color)
+                    majo.envHintBox.push(hintCopy)
+                    player.stages.add("curfewTextPushed")
                 }
             }
             break

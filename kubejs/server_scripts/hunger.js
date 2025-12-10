@@ -23,7 +23,7 @@ PlayerEvents.tick(event =>{
     player.setFoodLevel(Math.round(20*hungerScore.get()/majo.maxFood))
     player.setSaturation(0)
     let hungerMulti = majo.extraFoodNeed*majo.extraFoodNeedFromSporting
-    if (majo.faint || player.sleeping){hungerMulti = hungerMulti*sleepHungerDiscount}
+    if (majo.faint || player.sleeping){hungerMulti = hungerMulti*sleepHungerDiscount*timeSpeedMulti}
     if (Math.round(20*hungerScore.get()/majo.maxFood) > 0 && !isFocusMode){hungerScore.add(basicHungerSpeed*hungerMulti)}
 })
 
@@ -65,9 +65,7 @@ BlockEvents.rightClicked(event =>{
             if (property && nutrition && saturation){
                 let hungerScore = server.scoreboard.getOrCreatePlayerScore(majo.scoreHolder,hunger)
                 let hungerRecovery = nutrition*48000+saturation*48000
-                console.log(hungerRecovery)
                 hungerRecovery = Math.round(foodDiscount*hungerRecovery)
-                console.log(hungerRecovery)
                 hungerScore.add(hungerRecovery)
             }
         }

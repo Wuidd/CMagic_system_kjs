@@ -66,15 +66,20 @@ PlayerEvents.chat(event =>{
     let server = event.server
     let allPlayers = server.playerList.players
     if (!isMajoProgressing){
-        if (isMajoPlayer(player)){
-            let majo = isMajoPlayer(player)
+        let majo = isMajoPlayer(player)
+        if (majo){
+            if (majo.name == "樱羽艾玛"){
+                if (message.includes("kiang")){
+                    server.runCommandSilent("/execute as "+username+" at @s run playsound sound_effect:trail08 voice @a")
+                }
+            }
             for (let receiver of allPlayers){
                 receiver.tell("<"+username+majo.color+"◆"+majo.name+"§f> "+message)
             }
             event.cancel()
         }
-        if (isOperator(player)){
-            let op = isOperator(player)
+        let op = isOperator(player)
+        if (op){
             for (let receiver of allPlayers){
                 receiver.tell("<"+username+"§e◆场务 "+op.color+op.name+"§f> "+message)
             }
@@ -87,8 +92,8 @@ PlayerEvents.chat(event =>{
     }
     else {
         if (isJudging){return 0}
-        if (isMajoPlayer(player)){
-            let majo = isMajoPlayer(player)
+        let majo = isMajoPlayer(player)
+        if (majo){
             let ananOrder = false
             let ananOrderRadius = -1
             let ananOrderReceived = []
@@ -120,6 +125,11 @@ PlayerEvents.chat(event =>{
                 }
             }
             if (majo.faint || player.sleeping){message = faintWords[Math.floor(Math.random()*faintWords.length)]}
+            if (majo.name == "樱羽艾玛"){
+                if (message.includes("kiang")){
+                    server.runCommandSilent("/execute as "+username+" at @s run playsound sound_effect:trail08 voice @a")
+                }
+            }
             for (let receiver of allPlayers){
                 if (isMajoPlayer(receiver)){
                     let distance = receiver.distanceToEntity(player)
@@ -218,8 +228,8 @@ PlayerEvents.chat(event =>{
             }
             event.cancel()
         }
-        if (isOperator(player)){
-            let op = isOperator(player)
+        let op = isOperator(player)
+        if (op){
             if (message == "#local"){
                 server.runCommandSilent("/execute as "+username+" at @s run playsound minecraft:block.note_block.harp voice @s")
                 if (!player.stages.has("#local")){

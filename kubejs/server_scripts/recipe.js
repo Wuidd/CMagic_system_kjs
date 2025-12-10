@@ -20,7 +20,6 @@ ItemEvents.rightClicked(event =>{
 })
 
 //制作特殊书籍
-//日记
 ItemEvents.rightClicked("minecraft:writable_book",event =>{
     let player = event.player
     let majo = isMajoPlayer(player)
@@ -35,15 +34,18 @@ ItemEvents.rightClicked("minecraft:writable_book",event =>{
     let server = event.server
     player.closeMenu()
     player.tell({"text":"你决定把这本笔记本专门用作(点击以选择):","color":"green"})
-    server.runCommandSilent("/scoreboard players enable "+player.name.string+" transferBookToDiary")
-    player.tell({"text":"-[日记]","click":{"action":"run_command","value":"/trigger transferBookToDiary set 1"},"color":"green"})
+    server.runCommandSilent("/scoreboard players enable "+player.name.string+" transferBookTo")
+    player.tell({"text":"-[日记]","click":{"action":"run_command","value":"/trigger transferBookTo set 1"},"color":"green"})
+    //player.tell({"text":"-[译本]","click":{"action":"run_command","value":"/trigger transferBookTo set 2"},"color":"green"})
 })
 
+//转化
 PlayerEvents.tick(event =>{
     let player = event.player
     let server = event.server
-    if (!transferBookToDiary){return 0}
-    if (!server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly(player.name.string),transferBookToDiary).get()){return 0}
+    if (!transferBookTo){return 0}
+    let trans = server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly(player.name.string),transferBookTo).get()
+    if (!trans){return 0}
     let majo = isMajoPlayer(player)
     if (!majo){return 0}
     let item = player.getOffHandItem()
@@ -53,14 +55,23 @@ PlayerEvents.tick(event =>{
         }
         else {
             let server = event.server
-            item.setCustomData(item.customData.merge({"Transfered":true,"TransferToType":"DIARY","Owner":majo.name}))
-            item.setCustomName({"text":majo.name+"的日记本","italic":false})
-            player.tell({"text":"你决定用这个笔记本写日记……","color":"green"})
+            switch (trans){
+                case 1:
+                    item.setCustomData(item.customData.merge({"Transfered":true,"TransferToType":"DIARY","Owner":majo.name}))
+                    item.setCustomName({"text":majo.name+"的日记本","italic":false})
+                    player.tell({"text":"你决定用这个笔记本写日记……","color":"green"})
+                    break
+                case 2:
+                    item.setCustomData(item.customData.merge({"Transfered":true,"TransferToType":"TRANSLATE","Owner":majo.name}))
+                    item.setCustomName({"text":majo.name+"的译本","italic":false})
+                    player.tell({"text":"你决定用这个笔记本记录破译的文字……","color":"green"})
+                    break
+            }
             server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bell voice @s")
         }
     }
     else {
         player.tell({"text":"需要将普通的笔记本拿在副手……","color":"yellow"})
     }
-    server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly(player.name.string),transferBookToDiary).set(0)
+    server.scoreboard.getOrCreatePlayerScore($ScoreHolder.forNameOnly(player.name.string),transferBookTo).set(0)
 })

@@ -317,7 +317,6 @@ BlockEvents.rightClicked("kaleidoscope_cookery:stove",event =>{
         let server = event.server
         block = block.replace("lit=false","lit=true")
         let pos = vecToArr(event.block.pos)
-        console.log(block)
         server.runCommandSilent("/setblock "+pos[0]+" "+pos[1]+" "+pos[2]+" "+block)
         server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.fire.ambient voice @a")
     }
@@ -423,7 +422,7 @@ ServerEvents.commandRegistry(event =>{
     }
 
     event.register(
-        cmd.literal('yuki_shock')
+        cmd.literal('yuki-shock')
         .then(cmd.argument('target',arg.PLAYER.create(event))
         .then(cmd.argument('showIdentity',arg.BOOLEAN.create(event))
         .then(cmd.argument('message',arg.MESSAGE.create(event))
@@ -467,7 +466,7 @@ ServerEvents.commandRegistry(event =>{
         server.runCommandSilent("/execute as "+target.name.string+" at @s run playsound minecraft:ambient.cave voice @s ~ ~ ~ 1 0.2")
     }
     event.register(
-        cmd.literal('yuki_whisper')
+        cmd.literal('yuki-whisper')
         .then(cmd.argument('target',arg.PLAYER.create(event))
         .then(cmd.argument('showIdentity',arg.BOOLEAN.create(event))
         .then(cmd.argument('message',arg.MESSAGE.create(event))

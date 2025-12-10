@@ -78,8 +78,8 @@ lake_side.waterRedirect = lake
 
 const windmill = new Structure("风车",[[[-313,44,94],[-284,102,123]]],"minecraft:overworld")
 
-const test1 = new Structure("测试1",[[[-1591,-59,2000],[-1590,-57,2002]]],"minecraft:overworld")
-const test2 = new Structure("测试2",[[[-1589,-59,2000],[-1588,-57,2002]]],"minecraft:overworld")
+const test1 = new Structure("测试1",[[[155,-59,45],[156,-57,47]]],"minecraft:overworld")
+const test2 = new Structure("测试2",[[[157,-59,45],[159,-57,47]]],"minecraft:overworld")
 
 //结构表
 
@@ -87,7 +87,7 @@ global.structureList = [canteen,kitchen,trialchamber,trialchamber_hallway,entran
     parlor,parlor_hallway,courtyard,courtyard_hallway,toilet,sundrypile,medicroom,bathroom,warehouse,fireelehouse,waterelehouse,earthelehouse,
     basement_hallway,basement_elevator,basement_operateroom,basement_operateroom_hallway,basement_freezeroom,secfloor_hallway,studio,studio_balcony,library,entertainmentroom,
     entertainmentroom_balcony,jail_hall,jail_hallway,jail_rooms,jail_stairs,incinerateroom,incinerateroom_hallway,punishroom,punishroom_hallway,
-    lake,lake_island,lake_side,windmill,test1,test2
+    lake,lake_island,lake_side,windmill
 ]
 
 //可明确回忆的结构表

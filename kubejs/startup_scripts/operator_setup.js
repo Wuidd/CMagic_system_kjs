@@ -15,7 +15,8 @@ const owl_2 = new Operator("Ice_sparkle","典狱长","§8")
 const narrator = new Operator("v_t_4","旁白","§f")
 const guard = new Operator("ExhaleYiyu","看守","§8")
 const testor = new Operator("PLTaube","测试人员","§e")
-const filmer = new Operator("RevontuleTan","摄影","§e")
+const filmer1 = new Operator("RevontuleTan","摄影","§e")
+const filmer2 = new Operator("Ri_kki","摄影","§e")
 
 //场务的特殊参数
 
@@ -23,4 +24,4 @@ tsukishiro_yuki.flipTrigger = 0
 
 //生效的场务表
 
-global.operatorList = [tsukishiro_yuki,owl_1,owl_2,guard,narrator,filmer]
+global.operatorList = [tsukishiro_yuki,owl_1,owl_2,guard,narrator,filmer1,filmer2]

@@ -36,7 +36,7 @@ ItemEvents.rightClicked("minecraft:writable_book",event =>{
     player.tell({"text":"你决定把这本笔记本专门用作(点击以选择):","color":"green"})
     server.runCommandSilent("/scoreboard players enable "+player.name.string+" transferBookTo")
     player.tell({"text":"-[日记]","click":{"action":"run_command","value":"/trigger transferBookTo set 1"},"color":"green"})
-    //player.tell({"text":"-[译本]","click":{"action":"run_command","value":"/trigger transferBookTo set 2"},"color":"green"})
+    player.tell({"text":"-[译本]","click":{"action":"run_command","value":"/trigger transferBookTo set 2"},"color":"green"})
 })
 
 //转化

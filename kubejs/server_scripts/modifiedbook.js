@@ -6,6 +6,7 @@ const lineOfPage = 14 //书页的行
 const charOfPage = 266 //书页上限字符量
 const pagesOfBook = 100 //最大书页数
 const writingDiaryTimePause = 40 //书写一条日志的间隔
+const translateInfoPlace = "图书室" //可提供破译资料的位置
 
 //日记
 //开始回想
@@ -264,7 +265,7 @@ ServerEvents.commandRegistry(event =>{
             player.tell({"text":"未知的语言。","color":"yellow"})
             return 0
         }
-        let newBook = translate(book,language,[])
+        let newBook = translate(book,language,{})
         if (!newBook){
             player.tell({"text":"无可转译的内容。","color":"yellow"})
             return 0
@@ -304,17 +305,242 @@ ServerEvents.commandRegistry(event =>{
     )
 })
 
-ItemEvents.rightClicked("minecraft:written_book",event =>{
+ServerEvents.commandRegistry(event =>{
+    let {arguments:arg,commands:cmd} = event
+    function setTranslateBook(player){
+        let op = isOperator(player)
+        if (!op){
+            player.tell({"text":"无权使用。","color":"red"})
+            return 0
+        }
+        let book = player.getMainHandItem()
+        if (book.is("minecraft:writable_book") && book.is("minecraft:written_book")){
+            player.tell({"text":"未识别到书籍。","color":"yellow"})
+            return 0
+        }
+        if (!book.customData.getString("TransferToType")){
+            book.setCustomData(book.customData.merge({"TransferToType":"TRANSLATE"}))
+            player.tell({"text":"已将书籍设为合法译本。","color":"green"})
+            return 0
+        }
+        else {
+            player.tell({"text":"书籍已为合法译本或已为其它笔记本。","color":"yellow"})
+            return 0
+        }
+    }
+    event.register(
+        cmd.literal("setTranslateBook")
+        .executes(cmd =>{
+            let player = cmd.source.player
+            setTranslateBook(player)
+            return 0
+        })
+    )
+})
+
+//译本增添
+ItemEvents.rightClicked("minecraft:writable_book",event =>{
     if (!isMajoProgressing){return 0}
     let player = event.player
-    let offBook = player.getOffHandItem()
-    if (offBook.customData.getString("TransferToType") != "TRANSLATE"){return 0}
+    let majo = isMajoPlayer(player)
+    if (!majo){return 0}
+    let book = player.getOffHandItem()
+    if (book.customData.getString("TransferToType") != "TRANSLATE"){return 0}
+    let server = event.server
+    if (!player.stages.has("Decipher")){
+        if (!inSpecificStructure(player,translateInfoPlace)){return 0}
+        let existKeys = readTranslateKeys(book)
+        if (!existKeys){
+            existKeys = {}
+        }
+        let queryDict = findCompKey(existKeys,global.lojDict)
+        let queryDictKeys = Object.keys(queryDict)
+        if (!queryDictKeys.length){
+            player.tell({"text":"你已经完全掌握了这门诡谲的语言……这怎么可能？","color":"light_purple"})
+            player.closeMenu()
+            return 0
+        }
+        let queryKey = queryDictKeys[Math.floor(Math.random()*queryDictKeys.length)]
+        let queryValue = queryDict[queryKey]
+        majo.decipher["decipherBook"] = getItemStringRepresent(book)
+        majo.decipher["target"] = queryValue
+        majo.decipher["answer"] = queryKey
+        majo.decipher["tryLeft"] = 6
+        majo.decipher["try"] = []
+        if (majo.name == "宝生玛格"){
+            majo.decipher["tryLeft"] = 7
+        }
+        player.stages.add("Decipher")
+        player.tell({"text":"你搜罗了一些资料，开始尝试破译……","color":"yellow"})
+        player.tell({"text":"根据资料，「"+queryValue+"」可能对应一个「"+queryKey.length+"」个字母长的单词。","color":"yellow"})
+        printDecipherTry(majo)
+        server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bell voice @s")
+        player.closeMenu()
+    }
+    else {
+        player.stages.remove("Decipher")
+        player.tell({"text":"放弃破译了。","color":"yellow"})
+        server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bass voice @s")
+        player.closeMenu()
+    }
 })
+
+function tryDeciphering(majo,guess,server){
+    let player = majo.player
+    let book = player.getOffHandItem()
+    if (player.stages.has("Decipher") && !majo.decipher["target"]){
+        player.stages.remove("Decipher")
+    }
+    if (getItemStringRepresent(book) != majo.decipher["decipherBook"]){
+        player.stages.remove("Decipher")
+        player.tell({"text":"放弃破译了。","color":"yellow"})
+        server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bass voice @s")
+    }
+    let answer = majo.decipher["answer"]
+    let guessResult = []
+    for (let i=0;i<guess.length;i++){
+        let guessChar = guess.charAt(i)
+        let answerChar = answer.charAt(i)
+        if (guessChar === answerChar){
+            guessResult.push({
+                "char":guessChar,
+                "result":"CORRECT"
+            })
+        }
+        else {
+            let match = answer.match(new RegExp(guessChar))
+            if (!match){
+                guessResult.push({
+                    "char":guessChar,
+                    "result":"WRONG"
+                })
+            }
+            else {
+                let alreadyMatch = 0
+                for (let result of guessResult){
+                    if (result["char"] == guessChar && (result["result"] == "CORRECT" || result["result"] == "CONTAIN")){
+                        alreadyMatch ++
+                    }
+                }
+                if (alreadyMatch < match.length){
+                    guessResult.push({
+                        "char":guessChar,
+                        "result":"CONTAIN"
+                    })
+                }
+                else {
+                    guessResult.push({
+                        "char":guessChar,
+                        "result":"WRONG"
+                    })
+                }
+            }
+        }
+    }
+    let tryLog = ''
+    let allCorrect = 0
+    majo.decipher["tryLeft"] --
+    for (let result of guessResult){
+        switch(result["result"]){
+            case "CORRECT":
+                tryLog += "§a["+result["char"]+"]§f"
+                allCorrect ++
+                break
+            case "CONTAIN":
+                tryLog += "§e["+result["char"]+"]§f"
+                break
+            case "WRONG":
+                tryLog += "§7["+result["char"]+"]§f"
+                break
+        }
+    }
+    majo.decipher["try"].push(tryLog)
+    printDecipherTry(majo)
+    if (allCorrect >= answer.length){
+        player.stages.remove("Decipher")
+        player.tell({"text":"破译成功了！","color":"green"})
+        server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bell voice @s")
+        let newKey = "\n\""+majo.decipher["answer"]+"\":\""+majo.decipher["target"]+"\""
+        let newBook = writeBookPage(book,newKey,false)
+        if (!newBook){
+            player.tell({"text":"已经知道了新的正确匹配「"+newKey+"」,但是笔记本已经写不下了……","color":"yellow"})
+        }
+        else {
+            server.runCommandSilent("/item replace entity "+player.name.string+" weapon.offhand with "+newBook)
+        }
+    }
+    if (majo.decipher["tryLeft"] <= 0){
+        player.stages.remove("Decipher")
+        player.tell({"text":"没破译出来呢……","color":"yellow"})
+        server.runCommandSilent("/execute as "+player.name.string+" at @s run playsound minecraft:block.note_block.bass voice @s")
+    }
+}
+
+function printDecipherTry(majo){
+    let player = majo.player
+    player.tell(' ')
+    player.tell({"text":"目标「"+majo.decipher["target"]+"」 词长「"+majo.decipher["answer"].length+"」剩余尝试「"+majo.decipher["tryLeft"]+"」","color":"yellow"})
+    if (majo.decipher["try"].length){
+        for (let t of majo.decipher["try"]){
+            player.tell(t)
+        }
+    }
+    player.tell(' ')
+}
+
+//译本阅读
+ItemEvents.rightClicked("minecraft:written_book",event =>{
+    if (!isMajoProgressing){return 0}
+    tryTranslating(event)
+})
+
+ItemEvents.rightClicked("minecraft:writable_book",event =>{
+    if (!isMajoProgressing){return 0}
+    tryTranslating(event)
+})
+
+function tryTranslating(event){
+    let player = event.player
+    let server = event.server
+    let mainBook = player.getMainHandItem()
+    if (!mainBook.is("minecraft:writable_book") && !mainBook.is("minecraft:written_book")){return 0}
+    if (mainBook.customData.getString("TransferToType") == "TRANSLATE"){
+        player.tell({"text":"这好像也是一份译本……","color":"yellow"})
+        return 0
+    }
+    let offBook = player.getOffHandItem()
+    if (offBook.customData.getString("TransferToType") != "TRANSLATE"){
+        if (mainBook.customData.getBoolean("Translated")){
+            let originalVersion = mainBook.customData.getString("OriginalVersion")
+            if (!originalVersion){return 0}
+            server.runCommandSilent("/item replace entity "+player.name.string+" weapon.mainhand with "+originalVersion)
+            mainBook = player.getMainHandItem()
+            mainBook.setCustomData(mainBook.customData.merge({"Translated":false,"OriginalVersion":''}))
+        }
+        return 0
+    }
+    let translateDict = readTranslateKeys(offBook)
+    if (!translateDict){
+        player.tell({"text":"译本好像没什么帮助……","color":"yellow"})
+        return 0
+    }
+    else {
+        let newMainBook = translate(mainBook,"chinese",translateDict)
+        let originalVersion = mainBook.customData.getString("OriginalVersion")
+        if (!originalVersion){
+            originalVersion = getItemStringRepresent(mainBook)
+        }
+        server.runCommandSilent("/item replace entity "+player.name.string+" weapon.mainhand with "+newMainBook)
+        mainBook = player.getMainHandItem()
+        mainBook.setCustomData(mainBook.customData.merge({"Translated":true,"OriginalVersion":originalVersion}))
+    }
+}
 
 //翻译书本内容
 function translate(book,toLanguage,keyWords){
     for (let bookType of ["minecraft:writable_book","minecraft:written_book"]){
         if (!book.is(bookType)){continue}
+        let keys = Object.keys(keyWords)
         let NBT = '\['
         for (let key of Object.keys(book.toNBT()["components"])){
             if (key != bookType+"_content"){
@@ -361,42 +587,30 @@ function translate(book,toLanguage,keyWords){
                     }
                 }
                 if (toLanguage == "chinese"){
-                    if (!keyWords.length){
-                        text = text.replace(/\s+/g,'\×')
+                    if (!keys.length){
                         for (let keyWord of global.lojDictKeys){
-                            let regex = `\\b(${keyWord})\\b`
-                            regex = new RegExp(keyWord,"g")
-                            text = text.replace(regex,match => global.lojDict[match] || match)
+                            let regex = new RegExp('\\b'+keyWord+'\\s+',"g")
+                            text = text.replace(regex,match => global.lojDict[keyWord] || match)
                         }
-                        text = text.replace(/\×/g,'')
                     }
                     else {
-                        text = text.replace(/\s+/g,'\×')
-                        for (let keyWord of keyWords){
-                            if (Object.keys(global.lojDict).includes(keyWord)){
-                                let regex = `\\b(${keyWord})\\b`
-                                regex = new RegExp(keyWord,"g")
-                                text = text.replace(regex,match => global.lojDict[match] || match)
-                            }
+                        for (let keyWord of keys){
+                            let regex = new RegExp('\\b'+keyWord+'\\s+',"g")
+                            text = text.replace(regex,match => keyWords[keyWord] || match)
                         }
-                        text = text.replace(/\×/g,'')
                     }
                 }
                 else if (toLanguage == "lojban"){
-                    if (!keyWords.length){
+                    if (!keys.length){
                         for (let keyWord of Object.keys(global.lojDictReverse)){
-                            let regex = `\\b(${keyWord})\\b`
-                            regex = new RegExp(keyWord,"g")
+                            let regex = new RegExp(`\\b(${keyWord})\\b`,"g")
                             text = text.replace(regex,match => global.lojDictReverse[match]+' ' || match)
                         }
                     }
                     else {
-                        for (let keyWord of keyWords){
-                            if (Object.keys(global.lojDictReverse).includes(keyWord)){
-                                let regex = `\\b(${keyWord})\\b`
-                                regex = new RegExp(keyWord,"g")
-                                text = text.replace(regex,match => global.lojDictReverse[match]+' ' || match)
-                            }
+                        for (let keyWord of keys){
+                            let regex = new RegExp(`\\b(${keyWord})\\b`,"g")
+                            text = text.replace(regex,match => keyWords[match]+' ' || match)  
                         }
                     }
                 }
@@ -412,6 +626,54 @@ function translate(book,toLanguage,keyWords){
             }
             NBT += bookType+"_content={"+author+"pages:\["+String(newPages)+"]"+resolved+title+"}]"
             return bookType+NBT
+        }
+        else {
+            return null
+        }
+    }
+}
+
+//获得物品的文本代表
+function getItemStringRepresent(item){
+    let NBT = '\['
+    for (let key of Object.keys(item.toNBT()["components"])){
+        NBT += key+'='+String(item.toNBT()["components"][key])+','
+    }
+    NBT += ']'
+    return String(item.item)+NBT
+}
+
+//读取译本键
+function readTranslateKeys(book){
+    for (let bookType of ["minecraft:writable_book","minecraft:written_book"]){
+        if (!book.is(bookType)){continue}
+        if (Object.keys(book.toNBT()["components"]).includes(bookType+"_content")){
+            let content = book.toNBT()["components"][bookType+"_content"]
+            let pages = content["pages"]
+            let text = ''
+            for (let page of pages){
+                let newText = String(page["raw"])
+                if (bookType == "minecraft:written_book"){
+                    newText = newText.slice(2).slice(0,newText.length-4)
+                }
+                else {
+                    newText = newText.slice(1).slice(0,newText.length-2)
+                }
+                text += newText
+            }
+            let rawKeys = text.match(/["“][^"“”]+["”][:：]["“][^"“”]+["”]/g)
+            if (!rawKeys){return null}
+            let rawDict = {}
+            for (let rawKey of rawKeys){
+                let match = rawKey.match(/["“][^"“”]+["”]/g)
+                let key = String(match[0]).slice(1,-1)
+                let value = String(match[1]).slice(1,-1)
+                rawDict[key] = value
+            }
+            if (!Object.keys(rawDict).length){return null}
+            let finalDict = findCommonKey(rawDict,global.lojDict)
+            if (!Object.keys(finalDict).length){return null}
+            return finalDict
         }
         else {
             return null
@@ -456,7 +718,7 @@ function writeBookPage(book,text,shouldNew){
             let lastPage = String(pages[pages.length-1]['raw'])
             let pageChar
             if (bookType == "minecraft:written_book"){
-                lastPage = lastPage = lastPage.slice(2).slice(0,lastPage.length-3)
+                lastPage = lastPage = lastPage.slice(2).slice(0,lastPage.length-4)
                 pageChar = charUsedInThePage(lastPage)
             }
             else {
@@ -631,6 +893,29 @@ function isChineseChar(code) {
            (code >= 0x2B820 && code <= 0x2CEAF) ||
            (code >= 0xF900 && code <= 0xFAFF) ||
            (code >= 0x2F800 && code <= 0x2FA1F)
+}
+
+//字典取交
+function findCommonKey(smallDict,bigDict){
+    const result = {}
+    const dictMap = new Map(Object.entries(bigDict))
+    for (const [key,value] of Object.entries(smallDict)){
+        if (dictMap.has(key) && dictMap.get(key) == value){
+            result[key] = value
+        }
+    }
+    return result
+}
+
+//字典取补
+function findCompKey(smallDict,bigDict){
+    let result = {}
+    for (let key of Object.keys(bigDict)) {
+        if (!(key in Object.keys(smallDict)) || bigDict[key] != smallDict[key]){
+            result[key] = bigDict[key];
+        }
+    }
+    return result
 }
 
 //自动日记的词库

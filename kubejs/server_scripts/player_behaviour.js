@@ -110,6 +110,15 @@ PlayerEvents.chat(event =>{
         if (isJudging){return 0}
         let majo = isMajoPlayer(player)
         if (majo){
+            if (player.stages.has("Decipher")){
+                if (message.length == majo.decipher["answer"].length){
+                    if (/^[A-Za-z]+$/.test(message)){
+                        message = message.toLowerCase()
+                        tryDeciphering(majo,message,server)
+                        event.cancel()
+                    }
+                }
+            }
             let ananOrder = false
             let ananOrderRadius = -1
             let ananOrderReceived = []
@@ -218,7 +227,6 @@ PlayerEvents.chat(event =>{
                         }
                     }
                 }
-                if (!ananOrderReceived.length){event.cancel()}
                 let order = messagePrefix(message)
                 order = String(order)
                 order = order.slice(0,0)+"【"+order.slice(1)
@@ -226,6 +234,10 @@ PlayerEvents.chat(event =>{
                 for (let orderReceiver of ananMessageReceived){
                     orderReceiver.player.tell(majo.color+"◆"+majo.name)
                     orderReceiver.player.tell("  "+order)
+                }
+                if (!ananOrderReceived.length){
+                    player.tell({"text":"没有人受到影响呢……","color":"yellow"})
+                    event.cancel()
                 }
                 for (let orderReceiver of ananOrderReceived){
                     if (orderReceiver.player){
@@ -375,7 +387,8 @@ ServerEvents.tick(event =>{
 BlockEvents.broken(event =>{
     if (!isMajoProgressing){return 0}
     let player = event.player
-    if (!isMajoPlayer(player)){return 0}
+    let majo = isMajoPlayer(player)
+    if (!majo){return 0}
     let block = event.block
     for (let allowed of global.breakableBlockList){
         if (block.id == allowed || block.hasTag(allowed)){return 0}

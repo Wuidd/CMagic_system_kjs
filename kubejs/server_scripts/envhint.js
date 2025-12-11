@@ -87,6 +87,9 @@ ServerEvents.tick(event =>{
         for (let player of server.playerList.players){
             player.tell({"text":"钟声敲响，现在是"+currentDayHour+":00","color":"yellow"})
         }
+        if (currentDayHour == 6 || currentDayHour == 22){
+            server.runCommandSilent("/execute as @a at @s run playsound sound_effect:church_bell_2 voice @s")
+        }
     }
     if (weekdays && oldDay >= 0 && oldDayHour >= 0){
         let shouldChangeDay = false
@@ -150,6 +153,7 @@ ServerEvents.tick(event =>{
     if (level.day){return 0}
     let time = level.dayTime()
     if (time <= 13000 && time >= 23200){
+        timeSpeedMulti = 1
         return 0
     }
     for (let majo of global.majoList){
@@ -269,19 +273,20 @@ PlayerEvents.tick(event =>{
             let endApex = cube[1]
             if (startApex[0] <= pos[0] && startApex[1] <= pos[1] && startApex[2] <= pos[2] &&
                 endApex[0] >= pos[0] && endApex[1] >= pos[1] && endApex[2] >= pos[2]){
-                let server = event.server
-                server.scheduleInTicks(2,event =>{
-                    if (inSpecificStructure(player,checkPoint.inside.name)){
+                if (!player.stages.has("inCheckPoint")){
+                    if (player.stages.has("outDoors")){
                         player.stages.remove("outDoors")
                     }
                     else {
                         player.stages.add("outDoors")
                     }
-                })
+                    player.stages.add("inCheckPoint")
+                }
                 return 1
             }
         }
     }
+    player.stages.remove("inCheckPoint")
 })
 
 //清晨-牢房 Time=23460
@@ -356,9 +361,9 @@ ServerEvents.tick(event =>{
     switch (dayTime){
         case 16000:
             for (let p of playersInJail){
-                let majo = isMajoPlayer(p)
-                if (!majo){continue}
                 if (!p.stages.has("curfewTextPushed")){
+                    let majo = isMajoPlayer(p)
+                    if (!majo){continue}
                     let hint
                     if (Math.floor(5*majo.majolizeScore/majo.majolize) < 4 || majo.majolizeMulti == 0){
                         hint = global.curfewText[Math.floor(Math.random()*global.curfewText.length)]
@@ -373,6 +378,7 @@ ServerEvents.tick(event =>{
             }
             for (let p of playersOutDoors){
                 if (!p.stages.has("curfewTextPushed")){
+                    let majo = isMajoPlayer(p)
                     let hint = global.stayOutText[Math.floor(Math.random()*global.stayOutText.length)]
                     let hintCopy = new EnvHint(hint.text,hint.color)
                     majo.envHintBox.push(hintCopy)

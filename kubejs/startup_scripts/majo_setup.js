@@ -49,6 +49,14 @@ function Majo(name,height,color,token,physique,mentality){
     this.writingLogTimePause = 0
 
     this.envHintBox = []
+
+    this.decipher = {
+        "decipherBook":null,
+        "target":null,
+        "answer":null,
+        "tryLeft":0,
+        "try":[]
+    }
 }
 
 //角色卡

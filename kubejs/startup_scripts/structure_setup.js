@@ -78,8 +78,8 @@ lake_side.waterRedirect = lake
 
 const windmill = new Structure("风车",[[[-313,44,94],[-284,102,123]]],"minecraft:overworld")
 
-const test1 = new Structure("测试1",[[[155,-59,45],[156,-57,47]]],"minecraft:overworld")
-const test2 = new Structure("测试2",[[[157,-59,45],[159,-57,47]]],"minecraft:overworld")
+const test1 = new Structure("测试1",[[[249,-59,163],[250,-57,165]]],"minecraft:overworld")
+const test2 = new Structure("测试2",[[[251,-59,163],[252,-57,165]]],"minecraft:overworld")
 
 //结构表
 
@@ -120,5 +120,6 @@ const earthelehouse_door = new CheckPoint("地精之室大门",[[[83,38,-142],[8
 const courtyard_upface = new CheckPoint("中庭上方",[[[-72,46,-76],[-30,46,-40]]],"minecraft:overworld",courtyard,null,"OUTDOORS")
 const studio_balcony_door = new CheckPoint("画室阳台门",[[[-54,47,-39],[-52,50,-39]]],"minecraft:overworld",studio,studio_balcony,"OUTDOORS")
 const entertainmentroom_balcony_door = new CheckPoint("娱乐室阳台门",[[[-55,47,-77],[-51,50,-77]]],"minecraft:overworld",entertainmentroom,entertainmentroom_balcony,"OUTDOORS")
+const testdoor = new CheckPoint("测试",[[[204,-59,172],[204,-58,172]]],"minecraft:overworld",null,null,"OUTDOORS")
 
-global.checkPointOutDoors = [entrancehall_door,medicroom_door,warehouse_door,fireelehouse,waterelehouse_door,earthelehouse_door,courtyard_upface,studio_balcony_door,entertainmentroom_balcony_door]
+global.checkPointOutDoors = [entrancehall_door,medicroom_door,warehouse_door,fireelehouse_door,waterelehouse_door,earthelehouse_door,courtyard_upface,studio_balcony_door,entertainmentroom_balcony_door]
